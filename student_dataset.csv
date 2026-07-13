@@ -1,0 +1,201 @@
+Student_ID,Readiness_Level,Domain_Interest,Target_Company,Core_CS_Strength,Coding_Platform,Project_Exposure,Aptitude_Level,Comm_Confidence
+CSE001,Just Starting,Not Decided,Mass Recruiter,None,Never tried,Zero,Poor,Very Nervous
+CSE002,Ready for Interviews,Full Stack,Product-based,DSA,LeetCode,2+ projects,Excellent,Very Confident
+CSE003,Learning Basics,Web Development,Startup,DBMS,HackerRank,1 basic,Average,Need Practice
+CSE004,Actively Practicing,Data Science,Product-based,OS,GeeksforGeeks,2+ projects,Good,Fairly Confident
+CSE005,Just Starting,Cyber Security,Service-based,Networking,Never tried,Zero,Average,Nervous
+CSE006,Learning Basics,Not Decided,Mass Recruiter,DBMS,HackerRank,Zero,Poor,Need Practice
+CSE007,Ready for Interviews,Cloud/DevOps,Product-based,Networking,LeetCode,2+ projects,Excellent,Very Confident
+CSE008,Actively Practicing,Mobile App,Startup,DSA,CodeChef,1 basic,Good,Fairly Confident
+CSE009,Learning Basics,Web Development,Service-based,DBMS,HackerRank,1 basic,Average,Need Practice
+CSE010,Just Starting,Not Decided,Mass Recruiter,None,Never tried,Zero,Poor,Very Nervous
+CSE011,Ready for Interviews,Data Science,Product-based,DSA,LeetCode,Major Internship,Excellent,Very Confident
+CSE012,Actively Practicing,Full Stack,Startup,OS,GeeksforGeeks,2+ projects,Good,Fairly Confident
+CSE013,Learning Basics,Cyber Security,Service-based,Networking,HackerRank,Zero,Average,Need Practice
+CSE014,Just Starting,Not Decided,Mass Recruiter,None,Never tried,Zero,Poor,Nervous
+CSE015,Ready for Interviews,Cloud/DevOps,Product-based,DSA,LeetCode,2+ projects,Excellent,Very Confident
+CSE016,Learning Basics,Web Development,Startup,DBMS,HackerRank,1 basic,Average,Need Practice
+CSE017,Actively Practicing,Data Science,Product-based,OS,CodeChef,2+ projects,Good,Fairly Confident
+CSE018,Just Starting,Not Decided,Service-based,None,Never tried,Zero,Poor,Very Nervous
+CSE019,Ready for Interviews,Full Stack,Product-based,DSA,LeetCode,Major Internship,Excellent,Very Confident
+CSE020,Actively Practicing,Mobile App,Startup,DBMS,HackerRank,1 basic,Good,Fairly Confident
+CSE021,Just Starting,Cyber Security,Mass Recruiter,Networking,Never tried,Zero,Average,Nervous
+CSE022,Learning Basics,Not Decided,Service-based,OS,HackerRank,Zero,Poor,Need Practice
+CSE023,Ready for Interviews,Data Science,Product-based,DSA,LeetCode,2+ projects,Excellent,Very Confident
+CSE024,Actively Practicing,Web Development,Startup,DBMS,GeeksforGeeks,2+ projects,Good,Fairly Confident
+CSE025,Learning Basics,Full Stack,Service-based,OS,HackerRank,1 basic,Average,Need Practice
+CSE026,Just Starting,Not Decided,Mass Recruiter,None,Never tried,Zero,Poor,Very Nervous
+CSE027,Ready for Interviews,Cloud/DevOps,Product-based,Networking,LeetCode,2+ projects,Excellent,Very Confident
+CSE028,Actively Practicing,Data Science,Startup,DSA,CodeChef,1 basic,Good,Fairly Confident
+CSE029,Learning Basics,Mobile App,Service-based,DBMS,HackerRank,Zero,Average,Need Practice
+CSE030,Just Starting,Not Decided,Mass Recruiter,None,Never tried,Zero,Poor,Nervous
+CSE031,Ready for Interviews,Full Stack,Product-based,DSA,LeetCode,Major Internship,Excellent,Very Confident
+CSE032,Actively Practicing,Cyber Security,Startup,Networking,GeeksforGeeks,2+ projects,Good,Fairly Confident
+CSE033,Learning Basics,Web Development,Service-based,OS,HackerRank,1 basic,Average,Need Practice
+CSE034,Just Starting,Data Science,Mass Recruiter,None,Never tried,Zero,Poor,Very Nervous
+CSE035,Ready for Interviews,Cloud/DevOps,Product-based,DSA,LeetCode,2+ projects,Excellent,Very Confident
+CSE036,Actively Practicing,Full Stack,Startup,DBMS,CodeChef,2+ projects,Good,Fairly Confident
+CSE037,Learning Basics,Not Decided,Service-based,OS,HackerRank,Zero,Average,Need Practice
+CSE038,Just Starting,Web Development,Mass Recruiter,None,Never tried,Zero,Poor,Nervous
+CSE039,Ready for Interviews,Data Science,Product-based,DSA,LeetCode,Major Internship,Excellent,Very Confident
+CSE040,Actively Practicing,Mobile App,Startup,DBMS,GeeksforGeeks,1 basic,Good,Fairly Confident
+CSE041,Ready for Interviews,Data Science,Mass Recruiter,DBMS,LeetCode,2+ projects,Excellent,Very Confident
+CSE042,Learning Basics,Cloud/DevOps,Product-based,DSA,HackerRank,1 basic,Excellent,Nervous
+CSE043,Ready for Interviews,Mobile App,Mass Recruiter,DSA,LeetCode,2+ projects,Excellent,Fairly Confident
+CSE044,Actively Practicing,Not Decided,Product-based,None,HackerRank,2+ projects,Good,Fairly Confident
+CSE045,Just Starting,Cloud/DevOps,Startup,Networking,Never tried,Zero,Poor,Very Nervous
+CSE046,Actively Practicing,Mobile App,Product-based,None,HackerRank,1 basic,Good,Fairly Confident
+CSE047,Just Starting,Cyber Security,Startup,Networking,Never tried,1 basic,Average,Very Nervous
+CSE048,Actively Practicing,Data Science,Product-based,DBMS,GeeksforGeeks,2+ projects,Good,Need Practice
+CSE049,Just Starting,Cloud/DevOps,Mass Recruiter,Networking,HackerRank,1 basic,Poor,Very Nervous
+CSE050,Actively Practicing,Web Development,Mass Recruiter,DBMS,HackerRank,1 basic,Good,Fairly Confident
+CSE051,Just Starting,Not Decided,Mass Recruiter,None,HackerRank,Zero,Average,Nervous
+CSE052,Learning Basics,Not Decided,Product-based,None,Never tried,Zero,Average,Need Practice
+CSE053,Ready for Interviews,Cloud/DevOps,Service-based,Networking,LeetCode,Major Internship,Good,Fairly Confident
+CSE054,Learning Basics,Cyber Security,Startup,Networking,Never tried,1 basic,Average,Need Practice
+CSE055,Just Starting,Full Stack,Startup,DBMS,HackerRank,Zero,Poor,Nervous
+CSE056,Ready for Interviews,Not Decided,Service-based,DBMS,LeetCode,2+ projects,Good,Fairly Confident
+CSE057,Just Starting,Web Development,Mass Recruiter,DBMS,Never tried,1 basic,Average,Very Nervous
+CSE058,Ready for Interviews,Web Development,Mass Recruiter,DBMS,LeetCode,2+ projects,Excellent,Very Confident
+CSE059,Actively Practicing,Cloud/DevOps,Service-based,DSA,CodeChef,1 basic,Average,Fairly Confident
+CSE060,Ready for Interviews,Cyber Security,Startup,OS,LeetCode,2+ projects,Good,Fairly Confident
+CSE061,Actively Practicing,Web Development,Startup,OS,GeeksforGeeks,2+ projects,Good,Need Practice
+CSE062,Just Starting,Cloud/DevOps,Service-based,DSA,HackerRank,Zero,Average,Nervous
+CSE063,Actively Practicing,Not Decided,Service-based,DBMS,GeeksforGeeks,1 basic,Good,Fairly Confident
+CSE064,Learning Basics,Web Development,Mass Recruiter,OS,HackerRank,Zero,Poor,Need Practice
+CSE065,Actively Practicing,Cyber Security,Service-based,OS,LeetCode,1 basic,Good,Need Practice
+CSE066,Just Starting,Not Decided,Service-based,None,HackerRank,1 basic,Average,Very Nervous
+CSE067,Ready for Interviews,Cloud/DevOps,Service-based,Networking,GeeksforGeeks,2+ projects,Excellent,Fairly Confident
+CSE068,Learning Basics,Data Science,Startup,DSA,Never tried,1 basic,Poor,Need Practice
+CSE069,Just Starting,Web Development,Mass Recruiter,DBMS,HackerRank,1 basic,Poor,Nervous
+CSE070,Ready for Interviews,Mobile App,Startup,None,HackerRank,Major Internship,Excellent,Very Confident
+CSE071,Just Starting,Cyber Security,Service-based,Networking,Never tried,1 basic,Average,Nervous
+CSE072,Learning Basics,Mobile App,Mass Recruiter,OS,GeeksforGeeks,Zero,Average,Nervous
+CSE073,Just Starting,Web Development,Service-based,OS,Never tried,Zero,Average,Nervous
+CSE074,Actively Practicing,Not Decided,Mass Recruiter,DBMS,GeeksforGeeks,1 basic,Good,Fairly Confident
+CSE075,Ready for Interviews,Full Stack,Product-based,OS,LeetCode,2+ projects,Excellent,Fairly Confident
+CSE076,Just Starting,Web Development,Service-based,OS,HackerRank,1 basic,Average,Nervous
+CSE077,Learning Basics,Web Development,Product-based,OS,Never tried,Zero,Average,Need Practice
+CSE078,Just Starting,Cyber Security,Mass Recruiter,OS,HackerRank,Zero,Average,Very Nervous
+CSE079,Actively Practicing,Cloud/DevOps,Startup,Networking,HackerRank,1 basic,Good,Fairly Confident
+CSE080,Ready for Interviews,Not Decided,Product-based,None,Never tried,2+ projects,Good,Very Confident
+CSE081,Actively Practicing,Web Development,Startup,OS,LeetCode,1 basic,Average,Fairly Confident
+CSE082,Learning Basics,Data Science,Product-based,DSA,HackerRank,1 basic,Good,Nervous
+CSE083,Just Starting,Web Development,Service-based,DBMS,HackerRank,Zero,Average,Nervous
+CSE084,Learning Basics,Web Development,Product-based,DBMS,Never tried,Zero,Poor,Need Practice
+CSE085,Ready for Interviews,Cyber Security,Startup,OS,GeeksforGeeks,Major Internship,Excellent,Fairly Confident
+CSE086,Just Starting,Full Stack,Service-based,OS,Never tried,1 basic,Poor,Nervous
+CSE087,Ready for Interviews,Data Science,Service-based,DSA,GeeksforGeeks,2+ projects,Excellent,Very Confident
+CSE088,Learning Basics,Not Decided,Service-based,DBMS,HackerRank,1 basic,Average,Nervous
+CSE089,Ready for Interviews,Not Decided,Product-based,DBMS,GeeksforGeeks,Major Internship,Good,Very Confident
+CSE090,Learning Basics,Data Science,Service-based,DBMS,Never tried,Zero,Average,Nervous
+CSE091,Just Starting,Full Stack,Mass Recruiter,DBMS,HackerRank,Zero,Poor,Nervous
+CSE092,Learning Basics,Full Stack,Mass Recruiter,DSA,Never tried,Zero,Poor,Nervous
+CSE093,Just Starting,Data Science,Service-based,DSA,HackerRank,Zero,Poor,Very Nervous
+CSE094,Actively Practicing,Cloud/DevOps,Product-based,DSA,HackerRank,2+ projects,Good,Need Practice
+CSE095,Just Starting,Cloud/DevOps,Mass Recruiter,OS,HackerRank,Zero,Average,Very Nervous
+CSE096,Ready for Interviews,Web Development,Service-based,None,Never tried,2+ projects,Excellent,Fairly Confident
+CSE097,Just Starting,Not Decided,Service-based,None,Never tried,Zero,Poor,Nervous
+CSE098,Ready for Interviews,Not Decided,Startup,None,HackerRank,Major Internship,Good,Fairly Confident
+CSE099,Learning Basics,Cloud/DevOps,Mass Recruiter,Networking,GeeksforGeeks,Zero,Average,Nervous
+CSE100,Just Starting,Data Science,Mass Recruiter,OS,HackerRank,1 basic,Average,Nervous
+CSE101,Learning Basics,Web Development,Product-based,None,Never tried,Zero,Poor,Need Practice
+CSE102,Ready for Interviews,Mobile App,Startup,None,HackerRank,Major Internship,Excellent,Fairly Confident
+CSE103,Actively Practicing,Data Science,Startup,DSA,LeetCode,2+ projects,Good,Need Practice
+CSE104,Just Starting,Data Science,Service-based,OS,HackerRank,1 basic,Poor,Nervous
+CSE105,Actively Practicing,Cyber Security,Startup,OS,LeetCode,1 basic,Good,Need Practice
+CSE106,Just Starting,Cloud/DevOps,Startup,Networking,Never tried,Zero,Average,Nervous
+CSE107,Actively Practicing,Web Development,Startup,DBMS,CodeChef,2+ projects,Average,Need Practice
+CSE108,Just Starting,Cyber Security,Service-based,OS,Never tried,1 basic,Poor,Nervous
+CSE109,Actively Practicing,Not Decided,Product-based,None,Never tried,2+ projects,Good,Need Practice
+CSE110,Learning Basics,Mobile App,Startup,None,Never tried,Zero,Poor,Nervous
+CSE111,Actively Practicing,Full Stack,Startup,OS,CodeChef,2+ projects,Good,Need Practice
+CSE112,Just Starting,Data Science,Mass Recruiter,OS,Never tried,Zero,Average,Very Nervous
+CSE113,Actively Practicing,Cyber Security,Product-based,Networking,GeeksforGeeks,1 basic,Good,Need Practice
+CSE114,Just Starting,Cloud/DevOps,Mass Recruiter,Networking,HackerRank,Zero,Poor,Nervous
+CSE115,Actively Practicing,Cyber Security,Product-based,Networking,CodeChef,1 basic,Good,Fairly Confident
+CSE116,Just Starting,Data Science,Startup,DSA,Never tried,1 basic,Poor,Very Nervous
+CSE117,Ready for Interviews,Mobile App,Service-based,OS,GeeksforGeeks,2+ projects,Good,Fairly Confident
+CSE118,Actively Practicing,Cloud/DevOps,Mass Recruiter,Networking,LeetCode,1 basic,Average,Fairly Confident
+CSE119,Ready for Interviews,Mobile App,Startup,OS,LeetCode,2+ projects,Good,Very Confident
+CSE120,Actively Practicing,Cloud/DevOps,Service-based,Networking,HackerRank,2+ projects,Good,Fairly Confident
+CSE121,Ready for Interviews,Not Decided,Mass Recruiter,None,Never tried,2+ projects,Good,Very Confident
+CSE122,Learning Basics,Not Decided,Mass Recruiter,DBMS,GeeksforGeeks,Zero,Average,Nervous
+CSE123,Ready for Interviews,Not Decided,Startup,None,HackerRank,2+ projects,Good,Very Confident
+CSE124,Actively Practicing,Cloud/DevOps,Mass Recruiter,Networking,LeetCode,2+ projects,Good,Need Practice
+CSE125,Just Starting,Web Development,Service-based,None,HackerRank,Zero,Poor,Very Nervous
+CSE126,Learning Basics,Not Decided,Mass Recruiter,None,Never tried,Zero,Average,Nervous
+CSE127,Ready for Interviews,Mobile App,Service-based,None,Never tried,2+ projects,Good,Fairly Confident
+CSE128,Just Starting,Cloud/DevOps,Mass Recruiter,DSA,HackerRank,Zero,Average,Nervous
+CSE129,Learning Basics,Cloud/DevOps,Product-based,DSA,GeeksforGeeks,1 basic,Poor,Need Practice
+CSE130,Just Starting,Not Decided,Service-based,None,Never tried,Zero,Average,Very Nervous
+CSE131,Ready for Interviews,Cloud/DevOps,Mass Recruiter,OS,LeetCode,2+ projects,Good,Fairly Confident
+CSE132,Just Starting,Cyber Security,Mass Recruiter,Networking,HackerRank,1 basic,Poor,Nervous
+CSE133,Actively Practicing,Mobile App,Mass Recruiter,OS,GeeksforGeeks,1 basic,Average,Need Practice
+CSE134,Learning Basics,Cloud/DevOps,Startup,DSA,HackerRank,1 basic,Poor,Nervous
+CSE135,Actively Practicing,Not Decided,Service-based,DBMS,LeetCode,1 basic,Average,Need Practice
+CSE136,Learning Basics,Full Stack,Service-based,OS,HackerRank,Zero,Average,Nervous
+CSE137,Actively Practicing,Not Decided,Mass Recruiter,DBMS,LeetCode,2+ projects,Average,Need Practice
+CSE138,Ready for Interviews,Full Stack,Product-based,DBMS,GeeksforGeeks,Major Internship,Excellent,Very Confident
+CSE139,Actively Practicing,Full Stack,Product-based,OS,LeetCode,2+ projects,Good,Need Practice
+CSE140,Learning Basics,Cyber Security,Service-based,OS,GeeksforGeeks,1 basic,Average,Need Practice
+CSE141,Actively Practicing,Full Stack,Mass Recruiter,DSA,CodeChef,2+ projects,Average,Need Practice
+CSE142,Ready for Interviews,Not Decided,Startup,DBMS,GeeksforGeeks,2+ projects,Good,Very Confident
+CSE143,Actively Practicing,Web Development,Product-based,DBMS,HackerRank,1 basic,Good,Fairly Confident
+CSE144,Ready for Interviews,Not Decided,Startup,DBMS,GeeksforGeeks,Major Internship,Excellent,Very Confident
+CSE145,Actively Practicing,Full Stack,Product-based,OS,GeeksforGeeks,1 basic,Good,Fairly Confident
+CSE146,Learning Basics,Cyber Security,Mass Recruiter,OS,Never tried,Zero,Average,Nervous
+CSE147,Ready for Interviews,Cyber Security,Product-based,Networking,LeetCode,Major Internship,Excellent,Fairly Confident
+CSE148,Learning Basics,Cyber Security,Service-based,OS,Never tried,1 basic,Average,Nervous
+CSE149,Ready for Interviews,Data Science,Service-based,DBMS,GeeksforGeeks,Major Internship,Good,Fairly Confident
+CSE150,Actively Practicing,Mobile App,Product-based,None,HackerRank,1 basic,Good,Fairly Confident
+CSE151,Learning Basics,Web Development,Service-based,DBMS,HackerRank,1 basic,Average,Need Practice
+CSE152,Actively Practicing,Full Stack,Mass Recruiter,OS,CodeChef,1 basic,Good,Need Practice
+CSE153,Ready for Interviews,Data Science,Startup,DBMS,LeetCode,2+ projects,Excellent,Fairly Confident
+CSE154,Learning Basics,Data Science,Product-based,DSA,Never tried,1 basic,Excellent,Need Practice
+CSE155,Ready for Interviews,Not Decided,Product-based,DBMS,GeeksforGeeks,2+ projects,Excellent,Very Confident
+CSE156,Learning Basics,Web Development,Mass Recruiter,OS,GeeksforGeeks,Zero,Average,Need Practice
+CSE157,Ready for Interviews,Mobile App,Product-based,OS,LeetCode,2+ projects,Good,Fairly Confident
+CSE158,Learning Basics,Data Science,Product-based,OS,GeeksforGeeks,1 basic,Excellent,Nervous
+CSE159,Actively Practicing,Data Science,Service-based,DBMS,LeetCode,1 basic,Good,Need Practice
+CSE160,Ready for Interviews,Not Decided,Service-based,None,HackerRank,Major Internship,Good,Fairly Confident
+CSE161,Learning Basics,Web Development,Mass Recruiter,OS,HackerRank,1 basic,Average,Need Practice
+CSE162,Actively Practicing,Not Decided,Startup,DBMS,HackerRank,2+ projects,Average,Fairly Confident
+CSE163,Learning Basics,Full Stack,Mass Recruiter,DSA,Never tried,Zero,Average,Nervous
+CSE164,Actively Practicing,Full Stack,Product-based,OS,LeetCode,2+ projects,Good,Fairly Confident
+CSE165,Ready for Interviews,Web Development,Startup,DBMS,LeetCode,2+ projects,Good,Fairly Confident
+CSE166,Learning Basics,Web Development,Product-based,DBMS,GeeksforGeeks,Zero,Excellent,Need Practice
+CSE167,Ready for Interviews,Data Science,Mass Recruiter,DBMS,GeeksforGeeks,2+ projects,Excellent,Fairly Confident
+CSE168,Actively Practicing,Mobile App,Product-based,None,HackerRank,2+ projects,Good,Fairly Confident
+CSE169,Ready for Interviews,Data Science,Service-based,DSA,GeeksforGeeks,2+ projects,Good,Very Confident
+CSE170,Actively Practicing,Web Development,Service-based,None,Never tried,2+ projects,Good,Fairly Confident
+CSE171,Learning Basics,Mobile App,Product-based,None,Never tried,1 basic,Average,Nervous
+CSE172,Ready for Interviews,Web Development,Mass Recruiter,OS,LeetCode,2+ projects,Excellent,Very Confident
+CSE173,Actively Practicing,Data Science,Mass Recruiter,DBMS,CodeChef,1 basic,Average,Need Practice
+CSE174,Learning Basics,Not Decided,Startup,DBMS,HackerRank,Zero,Poor,Need Practice
+CSE175,Ready for Interviews,Not Decided,Service-based,DBMS,LeetCode,2+ projects,Good,Very Confident
+CSE176,Learning Basics,Not Decided,Startup,None,HackerRank,1 basic,Poor,Nervous
+CSE177,Ready for Interviews,Full Stack,Mass Recruiter,OS,LeetCode,2+ projects,Excellent,Very Confident
+CSE178,Actively Practicing,Mobile App,Startup,OS,LeetCode,2+ projects,Good,Need Practice
+CSE179,Ready for Interviews,Mobile App,Product-based,OS,GeeksforGeeks,Major Internship,Good,Fairly Confident
+CSE180,Learning Basics,Data Science,Service-based,DBMS,HackerRank,Zero,Poor,Nervous
+CSE181,Ready for Interviews,Not Decided,Product-based,None,Never tried,2+ projects,Excellent,Very Confident
+CSE182,Learning Basics,Full Stack,Service-based,OS,Never tried,1 basic,Average,Nervous
+CSE183,Ready for Interviews,Full Stack,Startup,DSA,LeetCode,Major Internship,Excellent,Very Confident
+CSE184,Actively Practicing,Full Stack,Service-based,OS,CodeChef,1 basic,Good,Fairly Confident
+CSE185,Learning Basics,Data Science,Service-based,DSA,GeeksforGeeks,Zero,Poor,Nervous
+CSE186,Actively Practicing,Full Stack,Product-based,DSA,CodeChef,1 basic,Average,Need Practice
+CSE187,Learning Basics,Not Decided,Startup,DBMS,HackerRank,1 basic,Poor,Nervous
+CSE188,Learning Basics,Data Science,Startup,DSA,GeeksforGeeks,Zero,Poor,Nervous
+CSE189,Learning Basics,Full Stack,Startup,OS,GeeksforGeeks,1 basic,Average,Need Practice
+CSE190,Learning Basics,Not Decided,Mass Recruiter,DBMS,GeeksforGeeks,1 basic,Poor,Need Practice
+CSE191,Learning Basics,Full Stack,Product-based,DSA,HackerRank,1 basic,Excellent,Need Practice
+CSE192,Learning Basics,Full Stack,Product-based,OS,HackerRank,Zero,Average,Nervous
+CSE193,Learning Basics,Web Development,Startup,DBMS,HackerRank,1 basic,Average,Nervous
+CSE194,Learning Basics,Full Stack,Product-based,OS,Never tried,1 basic,Excellent,Need Practice
+CSE195,Learning Basics,Full Stack,Product-based,OS,GeeksforGeeks,Zero,Average,Need Practice
+CSE196,Learning Basics,Web Development,Mass Recruiter,None,HackerRank,1 basic,Poor,Nervous
+CSE197,Learning Basics,Web Development,Startup,DBMS,GeeksforGeeks,Zero,Poor,Nervous
+CSE198,Learning Basics,Web Development,Startup,OS,Never tried,Zero,Excellent,Nervous
+CSE199,Learning Basics,Web Development,Startup,OS,Never tried,1 basic,Excellent,Nervous
+CSE200,Learning Basics,Web Development,Startup,OS,HackerRank,1 basic,Poor,Need Practice

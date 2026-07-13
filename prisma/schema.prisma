@@ -1,0 +1,92 @@
+3// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  image         String?
+  role          String    @default("USER") // USER or ADMIN
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Progress tracking
+  currentDay    Int       @default(1)
+  readinessScore Float     @default(0.0)
+  streak        Int       @default(0)
+  
+  roadmaps      Roadmap[]
+  analytics     Analytics[]
+  activities    Activity[]
+}
+
+model Roadmap {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  phases      Phase[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Phase {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  order       Int
+  roadmapId   String
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id])
+  tasks       Task[]
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  day         Int
+  status      String   @default("PENDING") // PENDING, COMPLETED, FAILED
+  type        String   @default("TOPIC")   // TOPIC, PROBLEM, MOCK
+  phaseId     String
+  phase       Phase    @relation(fields: [phaseId], references: [id])
+}
+
+model Analytics {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  date        DateTime @default(now())
+  metric      String   // e.g., "Readiness", "StudyHours"
+  value       Float
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  action      String
+  status      String?
+  timestamp   DateTime @default(now())
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   // ARTICLE, VIDEO, COURSE
+  category    String
+  url         String
+  duration    String?
+  thumbnail   String?
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
