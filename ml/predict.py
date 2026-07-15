@@ -17,14 +17,42 @@ bayesian_mapping = data['bayesian_mapping']
 def predict(input_data):
     # input_data is a dict of feature: value
     
+    # Map frontend keys to model feature keys
+    mapped_data = {}
+    key_mapping = {
+        'domain': 'Domain_Interest',
+        'target': 'Target_Company',
+        'strength': 'Core_CS_Strength',
+        'platform': 'Coding_Platform',
+        'exposure': 'Project_Exposure',
+        'aptitude': 'Aptitude_Level',
+        'comm': 'Comm_Confidence',
+        # Keep originals if they are already mapped
+        'Domain_Interest': 'Domain_Interest',
+        'Target_Company': 'Target_Company',
+        'Core_CS_Strength': 'Core_CS_Strength',
+        'Coding_Platform': 'Coding_Platform',
+        'Project_Exposure': 'Project_Exposure',
+        'Aptitude_Level': 'Aptitude_Level',
+        'Comm_Confidence': 'Comm_Confidence',
+    }
+    for k, v in input_data.items():
+        if k in key_mapping:
+            mapped_data[key_mapping[k]] = v
+        else:
+            mapped_data[k] = v
+
     # 1. XGBoost Readiness Prediction
-    input_df = pd.DataFrame([input_data])
+    input_dict = {}
     for col in features:
-        if col in input_data:
+        if col in mapped_data:
             try:
-                input_df[col] = le_dict[col].transform([str(input_data[col])])
+                input_dict[col] = le_dict[col].transform([str(mapped_data[col])])[0]
             except:
-                input_df[col] = 0 # Fallback
+                input_dict[col] = 0 # Fallback
+        else:
+            input_dict[col] = 0
+    input_df = pd.DataFrame([input_dict])[features]
     
     # Prediction
     pred_idx = model.predict(input_df)[0]
@@ -39,7 +67,7 @@ def predict(input_data):
     domain_results = {}
     for domain, info in bayesian_mapping.items():
         score = np.log(info['prior'])
-        for col, val in input_data.items():
+        for col, val in mapped_data.items():
             if col in info['conditionals']:
                 # P(Value | Domain)
                 p_val = info['conditionals'][col].get(val, 0.001) # Laplace smoothing

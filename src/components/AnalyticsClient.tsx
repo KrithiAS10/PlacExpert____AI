@@ -30,7 +30,7 @@ interface AnalyticsUser {
 
 interface AnalyticsClientProps {
   user: AnalyticsUser;
-  chartData?: Record<string, unknown> | null;
+  chartData?: any;
 }
 
 export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {

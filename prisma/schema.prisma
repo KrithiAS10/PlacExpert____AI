@@ -1,4 +1,4 @@
-3// This is your Prisma schema file,
+// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -23,6 +23,23 @@ model User {
   currentDay    Int       @default(1)
   readinessScore Float     @default(0.0)
   streak        Int       @default(0)
+
+  // Student profiling answers
+  academicYear       String?
+  domainInterest     String?
+  targetCompany      String?
+  dsaCount           String?
+  projects           String?
+  coreCsStrength     String?
+  codingPlatform     String?
+  aptitude           String?
+  communication      String?
+  mockInterviewExp   String?
+  codingConfidence   String?
+  dailyStudyTime     String?
+  preferredLang      String?
+  placementTimeline  String?
+  readinessLevel     String?
   
   roadmaps      Roadmap[]
   analytics     Analytics[]

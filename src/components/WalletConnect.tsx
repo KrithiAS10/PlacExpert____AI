@@ -17,8 +17,8 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
   useEffect(() => {
     checkConnection();
     
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts: string[]) => {
+    if ((window as any).ethereum) {
+      (window as any).ethereum.on("accountsChanged", (accounts: string[]) => {
         if (accounts.length > 0) {
           setAddress(accounts[0]);
           onConnect?.(accounts[0]);
@@ -31,9 +31,9 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
   }, []);
 
   const checkConnection = async () => {
-    if (typeof window.ethereum !== "undefined") {
+    if (typeof (window as any).ethereum !== "undefined") {
       try {
-        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        const accounts = await (window as any).ethereum.request({ method: "eth_accounts" });
         if (accounts.length > 0) {
           setAddress(accounts[0]);
           onConnect?.(accounts[0]);
@@ -48,14 +48,14 @@ export function WalletConnect({ onConnect, onDisconnect }: WalletConnectProps) {
     setIsConnecting(true);
     setError(null);
 
-    if (typeof window.ethereum === "undefined") {
+    if (typeof (window as any).ethereum === "undefined") {
       setError("MetaMask extension not found. Please install it to proceed.");
       setIsConnecting(false);
       return;
     }
 
     try {
-      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+      const accounts = await (window as any).ethereum.request({ method: "eth_requestAccounts" });
       setAddress(accounts[0]);
       onConnect?.(accounts[0]);
     } catch (err: any) {

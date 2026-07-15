@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Activity,
   BarChart3,
-  Globe
+  Globe,
+  AlertCircle
 } from "lucide-react";
 import Link from "next/link";
 
@@ -96,6 +97,31 @@ const steps = [
         icon: MessageSquare
       }
     ]
+  },
+  {
+    id: 4,
+    title: "Phase 4: Roadmap Customization",
+    subtitle: "Customize your prep track style and timeline.",
+    questions: [
+      {
+        id: "preferredLang",
+        label: "Q9: What is your preferred programming language?",
+        options: ["C++", "Java", "Python", "JavaScript", "C"],
+        icon: Code2
+      },
+      {
+        id: "dailyStudyTime",
+        label: "Q10: How much time can you commit daily?",
+        options: ["<1 hour", "1-2 hours", "2-3 hours", "3-5 hours", "5+ hours"],
+        icon: Laptop
+      },
+      {
+        id: "placementTimeline",
+        label: "Q11: What is your preparation timeline?",
+        options: ["1 Month", "45 Days", "2 Months", "3 Months", "6 Months"],
+        icon: Target
+      }
+    ]
   }
 ];
 
@@ -105,6 +131,7 @@ export default function ProfilingPage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleOptionSelect = (questionId: string, option: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: option }));
@@ -112,16 +139,22 @@ export default function ProfilingPage() {
 
   const getPrediction = async () => {
     setIsPredicting(true);
+    setError(null);
     try {
       const response = await fetch('/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(answers),
       });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to compile prediction");
+      }
       const data = await response.json();
       setPredictionResult(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Prediction failed:", err);
+      setError(err.message || "An unexpected error occurred");
     } finally {
       setIsPredicting(false);
       setIsCompleted(true);
@@ -164,82 +197,171 @@ export default function ProfilingPage() {
     );
   }
 
-  if (isCompleted && predictionResult) {
+  if (isCompleted && error) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-card p-10 rounded-[32px] border-white/10 space-y-10"
+      <div className="max-w-xl mx-auto py-24 px-6 text-center space-y-8">
+        <div className="w-20 h-20 bg-brand-red/10 border border-brand-red/20 rounded-3xl flex items-center justify-center mx-auto text-brand-red shadow-glow-red/25">
+          <AlertCircle className="w-10 h-10" />
+        </div>
+        <div className="space-y-3">
+          <h1 className="text-2xl font-bold text-white">Analysis Failed</h1>
+          <p className="text-gray-400 max-w-sm mx-auto leading-relaxed">
+            {error}
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setIsCompleted(false);
+            setError(null);
+            getPrediction();
+          }}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-brand-cyan text-dark-bg font-bold rounded-xl hover:bg-brand-cyan/90 transition-all shadow-glow-cyan"
         >
-          <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
-            <div className="w-24 h-24 bg-brand-cyan/20 rounded-3xl flex items-center justify-center text-brand-cyan shrink-0 shadow-glow-cyan/20">
-              <Sparkles className="w-12 h-12" />
+          Retry Analysis
+        </button>
+      </div>
+    );
+  }
+
+  if (isCompleted && predictionResult) {
+    // Sort domain mapping by probability
+    const topDomains = Object.entries(predictionResult.domain_mapping || {})
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 6) as [string, number][];
+
+    const confidence = Math.round((predictionResult.readiness_confidence?.[predictionResult.readiness] || 0) * 100);
+    const topDomain  = topDomains[0]?.[0] ?? answers.domain ?? "Full Stack";
+
+    const readinessColors: Record<string, string> = {
+      "Just Starting":         "text-brand-red",
+      "Learning Basics":       "text-brand-orange",
+      "Actively Practicing":   "text-brand-cyan",
+      "Ready for Interviews":  "text-brand-green",
+    };
+    const rlColor = readinessColors[predictionResult.readiness] ?? "text-brand-cyan";
+
+    return (
+      <div className="max-w-3xl mx-auto py-10 px-4 sm:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-16 h-16 bg-brand-cyan/10 border border-brand-cyan/20 rounded-2xl flex items-center justify-center text-brand-cyan shrink-0">
+              <Sparkles className="w-8 h-8" />
             </div>
-            <div className="space-y-2 flex-1">
-              <div className="flex items-center gap-2 justify-center md:justify-start">
-                <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest bg-brand-cyan/10 px-2 py-1 rounded-md flex items-center gap-1">
-                  <Activity className="w-3 h-3" /> AI Analysis Complete
-                </span>
-              </div>
-              <h1 className="text-4xl font-bold text-white">Your Career Readiness Score</h1>
-              <p className="text-gray-400">Based on our advanced predictive analytics, here is your current standing and recommended focus areas.</p>
+            <div>
+              <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest bg-brand-cyan/10 px-2.5 py-1 rounded-lg inline-flex items-center gap-1 mb-1">
+                <Activity className="w-3 h-3" /> AI Analysis Complete
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Your Career Readiness Report</h1>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
-              <div className="flex items-center gap-3 text-brand-cyan">
-                <Target className="w-5 h-5" />
-                <h3 className="font-bold uppercase text-[10px] tracking-widest">Readiness Level</h3>
+          {/* Readiness level + top domain */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="glass-card p-5 rounded-2xl space-y-3">
+              <div className="flex items-center gap-2 text-brand-cyan">
+                <Target className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Readiness Level</span>
               </div>
-              <p className="text-2xl font-bold text-white capitalize">{predictionResult.readiness}</p>
-              <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-brand-cyan" 
-                  style={{ width: `${(predictionResult.readiness_confidence?.[predictionResult.readiness] || 0) * 100}%` }}
-                />
+              <p className={`text-2xl font-bold ${rlColor}`}>{predictionResult.readiness}</p>
+              <div className="space-y-1.5">
+                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${confidence}%` }}
+                    transition={{ duration: 0.9 }}
+                    className="h-full bg-brand-cyan rounded-full"
+                  />
+                </div>
+                <p className="text-[11px] text-gray-500">AI Confidence: <span className="text-white font-bold">{confidence}%</span></p>
               </div>
-              <p className="text-[10px] text-gray-500 font-medium">
-                AI Confidence: {Math.round((predictionResult.readiness_confidence?.[predictionResult.readiness] || 0) * 100)}%
-              </p>
             </div>
 
-            <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4 md:col-span-2">
-              <div className="flex items-center gap-3 text-brand-orange">
-                <BarChart3 className="w-5 h-5" />
-                <h3 className="font-bold uppercase text-[10px] tracking-widest">Domain Interest Probability</h3>
+            <div className="glass-card p-5 rounded-2xl space-y-3">
+              <div className="flex items-center gap-2 text-brand-orange">
+                <Target className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Best Fit Domain</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {Object.entries(predictionResult.domain_mapping || {})
-                  .sort(([, a], [, b]) => (b as number) - (a as number))
-                  .slice(0, 6)
-                  .map(([domain, score]) => (
-                    <div key={domain} className="space-y-1">
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-gray-400 font-medium">{domain}</span>
-                        <span className="text-white font-bold">{Math.round((score as number) * 100)}%</span>
-                      </div>
-                      <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-brand-orange/40" style={{ width: `${(score as number) * 100}%` }} />
-                      </div>
+              <p className="text-2xl font-bold text-white">{topDomain}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(answers.target) && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-orange/10 border border-brand-orange/20 text-brand-orange">
+                    {answers.target}
+                  </span>
+                )}
+                {(answers.preferredLang) && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-blue/10 border border-brand-blue/20 text-brand-blue">
+                    {answers.preferredLang}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Domain probability bars */}
+          {topDomains.length > 0 && (
+            <div className="glass-card p-5 rounded-2xl space-y-4">
+              <div className="flex items-center gap-2 text-brand-purple">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Domain Probability Distribution</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {topDomains.map(([domain, score]) => (
+                  <div key={domain} className="space-y-1.5">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-gray-300 font-medium">{domain}</span>
+                      <span className="text-white font-bold">{Math.round((score as number) * 100)}%</span>
                     </div>
-                  ))}
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(score as number) * 100}%` }}
+                        transition={{ duration: 0.7, delay: 0.1 }}
+                        className="h-full bg-gradient-to-r from-brand-purple/70 to-brand-blue/70 rounded-full"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
+            </div>
+          )}
+
+          {/* Profile summary */}
+          <div className="glass-card p-5 rounded-2xl">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Your Profile Summary</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { label: answers.readiness, color: "text-brand-cyan bg-brand-cyan/10 border-brand-cyan/20" },
+                { label: answers.strength && `Strength: ${answers.strength}`, color: "text-brand-teal bg-brand-teal/10 border-brand-teal/20" },
+                { label: answers.platform, color: "text-brand-blue bg-brand-blue/10 border-brand-blue/20" },
+                { label: answers.aptitude && `Aptitude: ${answers.aptitude}`, color: "text-brand-purple bg-brand-purple/10 border-brand-purple/20" },
+                { label: answers.comm, color: "text-brand-orange bg-brand-orange/10 border-brand-orange/20" },
+                { label: answers.placementTimeline, color: "text-brand-green bg-brand-green/10 border-brand-green/20" },
+              ].filter(t => t.label).map((t, i) => (
+                <span key={i} className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${t.color}`}>
+                  {t.label}
+                </span>
+              ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link 
+          {/* CTA Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link
               href="/roadmap"
-              className="flex items-center justify-center gap-3 py-5 bg-brand-cyan text-dark-bg font-bold rounded-2xl hover:bg-brand-cyan/90 transition-all shadow-glow-cyan group"
+              className="flex items-center justify-center gap-2 py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl hover:bg-brand-cyan/90 active:scale-95 transition-all shadow-glow-cyan group"
             >
               <Map className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-              View Custom Roadmap
+              View My Roadmap
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link 
+            <Link
               href="/"
-              className="flex items-center justify-center gap-3 py-5 bg-white/5 text-white font-bold rounded-2xl border border-white/10 hover:bg-white/10 transition-all"
+              className="flex items-center justify-center gap-2 py-4 bg-white/5 text-white font-bold rounded-2xl border border-white/10 hover:bg-white/10 active:scale-95 transition-all"
             >
               Return to Dashboard
             </Link>
@@ -265,7 +387,7 @@ export default function ProfilingPage() {
         </div>
         <div className="flex justify-between items-end">
           <div>
-            <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest bg-brand-cyan/10 px-2 py-1 rounded-md">Step {currentStep + 1} of 3</span>
+            <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest bg-brand-cyan/10 px-2 py-1 rounded-md">Step {currentStep + 1} of {steps.length}</span>
             <h2 className="text-3xl font-bold text-white mt-2">{steps[currentStep].title}</h2>
           </div>
           <div className="text-right">
