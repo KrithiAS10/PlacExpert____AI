@@ -1,7 +1,7 @@
-/node_modules
-/.next/
-/out/
-/build
+node_modules/
+.next/
+out/
+build
 
 __pycache__/
 *.pyc
@@ -15,3 +15,8 @@ venv/
 *.log
 .DS_Store
 Thumbs.db
+
+# Prisma local database files (not shared — teammates generate their own)
+prisma/*.db
+prisma/*.db-journal
+backend/ml/*.db
