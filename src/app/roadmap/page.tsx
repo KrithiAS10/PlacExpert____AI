@@ -1,396 +1,577 @@
 "use client";
 
-import { ROADMAP_DATA } from "@/lib/mock-data";
-import { PhaseCard } from "./components/PhaseCard";
+import { useState, useEffect, useRef } from "react";
 import { ReadinessChart } from "./components/ReadinessChart";
-import { 
-  CheckCircle2, 
-  Map as MapIcon, 
-  FileUp, 
-  Play, 
-  Info, 
-  TrendingUp, 
+import {
+  CheckCircle2,
+  Play,
+  TrendingUp,
   AlertCircle,
   Zap,
-  ArrowRight
+  Calendar,
+  Clock,
+  Target,
+  Code2,
+  BookOpen,
+  Brain,
+  Sparkles,
+  ChevronDown,
+  Lock,
+  Star,
+  ExternalLink,
+  Upload,
+  RefreshCw,
+  BarChart3,
+  FileCode,
+  Check,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
+
+// ─────────────────────────────────────────────
+// Types
+// ─────────────────────────────────────────────
+interface Task {
+  id: string;
+  title: string;
+  description: string | null; // stores resource_url
+  day: number;
+  status: string;
+  type: string;
+}
+interface Phase {
+  id: string;
+  title: string;
+  description: string | null;
+  order: number;
+  tasks: Task[];
+}
+interface Roadmap {
+  id: string;
+  title: string;
+  description: string | null;
+  phases: Phase[];
+}
+interface UserProfile {
+  name: string | null;
+  email: string;
+  readinessScore: number;
+  currentDay: number;
+  streak: number;
+  readinessLevel: string | null;
+  domainInterest: string | null;
+  targetCompany: string | null;
+  coreCsStrength: string | null;
+  codingPlatform: string | null;
+  projects: string | null;
+  aptitude: string | null;
+  communication: string | null;
+  dailyStudyTime: string | null;
+  preferredLang: string | null;
+  placementTimeline: string | null;
+}
+interface WeakArea {
+  name: string;
+  reason: string;
+  severity: string;
+}
+
+// ─────────────────────────────────────────────
+// Dynamic Platform Matcher based on URL
+// ─────────────────────────────────────────────
+interface PlatformMeta {
+  label: string;
+  color: string;
+  bg: string;
+  border: string;
+  icon: React.ElementType;
+}
+
+function resolvePlatform(url: string | null, taskType: string): PlatformMeta {
+  const targetUrl = url || "";
+  if (targetUrl.includes("leetcode.com")) {
+    return {
+      label: "LeetCode",
+      color: "text-brand-cyan",
+      bg: "bg-brand-cyan/10",
+      border: "border-brand-cyan/20",
+      icon: Code2,
+    };
+  }
+  if (targetUrl.includes("hackerrank.com")) {
+    return {
+      label: "HackerRank",
+      color: "text-brand-orange",
+      bg: "bg-brand-orange/10",
+      border: "border-brand-orange/20",
+      icon: Brain,
+    };
+  }
+  if (targetUrl.includes("geeksforgeeks.org")) {
+    return {
+      label: "GeeksforGeeks",
+      color: "text-brand-purple",
+      bg: "bg-brand-purple/10",
+      border: "border-brand-purple/20",
+      icon: BookOpen,
+    };
+  }
+
+  // Fallbacks based on task types
+  if (taskType === "PROBLEM") {
+    return {
+      label: "LeetCode",
+      color: "text-brand-cyan",
+      bg: "bg-brand-cyan/10",
+      border: "border-brand-cyan/20",
+      icon: Code2,
+    };
+  }
+  if (taskType === "MOCK") {
+    return {
+      label: "HackerRank",
+      color: "text-brand-orange",
+      bg: "bg-brand-orange/10",
+      border: "border-brand-orange/20",
+      icon: Brain,
+    };
+  }
+  return {
+    label: "GeeksforGeeks",
+    color: "text-brand-purple",
+    bg: "bg-brand-purple/10",
+    border: "border-brand-purple/20",
+    icon: BookOpen,
+  };
+}
 
 export default function RoadmapPage() {
-  return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+  const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [weakAreas, setWeakAreas] = useState<WeakArea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedPhaseId, setExpandedPhaseId] = useState<string | null>(null);
+
+  // File Upload states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "success" | "error">("idle");
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const fetchRoadmapData = () => {
+    fetch("/api/roadmap")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.roadmap) {
+          setRoadmap(data.roadmap);
+          const todayPhase = data.roadmap.phases.find((p: Phase) =>
+            p.tasks.some((t: Task) => t.day === data.user?.currentDay)
+          );
+          setExpandedPhaseId((prev) => prev || todayPhase?.id || data.roadmap.phases[0]?.id || null);
+        }
+        if (data.user) setUser(data.user);
+        if (data.weakAreas) setWeakAreas(data.weakAreas.slice(0, 3));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchRoadmapData();
+  }, []);
+
+  // Handle simulated upload and real DB save
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+      setUploadStatus("idle");
+    }
+  };
+
+  const triggerUpload = async () => {
+    if (!selectedFile || !todayTask) return;
+
+    setUploadStatus("uploading");
+    setUploadProgress(0);
+
+    // Simulated progress animation
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(interval);
+          return 90;
+        }
+        return prev + 15;
+      });
+    }, 150);
+
+    try {
+      // Call endpoint to update task status in DB
+      const res = await fetch("/api/roadmap/task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskId: todayTask.id,
+          status: "COMPLETED",
+        }),
+      });
+
+      clearInterval(interval);
+      setUploadProgress(100);
+
+      if (res.ok) {
+        setTimeout(() => {
+          setUploadStatus("success");
+          setSelectedFile(null);
+          // Refetch to update progress instantly
+          fetchRoadmapData();
+        }, 300);
+      } else {
+        setUploadStatus("error");
+      }
+    } catch {
+      clearInterval(interval);
+      setUploadStatus("error");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 py-8 space-y-5 animate-pulse">
+        <div className="h-7 w-56 bg-white/5 rounded-xl" />
+        <div className="h-4 w-36 bg-white/5 rounded-lg" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2 h-[450px] bg-white/5 rounded-2xl" />
+          <div className="h-[450px] bg-white/5 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!roadmap || !user) {
+    return (
+      <div className="max-w-md mx-auto px-6 py-28 text-center space-y-8">
+        <div className="w-24 h-24 rounded-3xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center mx-auto">
+          <Target className="w-12 h-12 text-brand-cyan/40" />
+        </div>
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Your 45-Day Roadmap</h1>
-          <p className="text-gray-400 text-sm">Adaptive path based on your profile assessment — updates every weekly checkpoint</p>
-        </div>
-        
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-dark-card border border-dark-border rounded-lg text-sm font-medium text-gray-300 hover:bg-dark-hover transition-colors">
-            Initial Roadmap
-          </button>
-          <button className="px-4 py-2 bg-brand-cyan/10 border border-brand-cyan/30 rounded-lg text-sm font-bold text-brand-cyan shadow-glow-cyan">
-            Adaptive Roadmap <span className="ml-1 bg-brand-cyan text-dark-bg text-[10px] px-1.5 py-0.5 rounded uppercase">New</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Stats Summary Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 glass-card p-6 rounded-2xl flex flex-wrap gap-4 items-center">
-          <div className="flex items-center gap-2 bg-brand-cyan/5 border border-brand-cyan/10 px-3 py-1.5 rounded-full text-[12px]">
-            <div className="w-2 h-2 bg-brand-cyan rounded-full"></div>
-            <span className="text-gray-300">Learning Basics</span>
-          </div>
-          <div className="flex items-center gap-2 bg-brand-blue/5 border border-brand-blue/10 px-3 py-1.5 rounded-full text-[12px]">
-            <div className="w-2 h-2 bg-brand-blue rounded-full"></div>
-            <span className="text-gray-300">Web Development</span>
-          </div>
-          <div className="flex items-center gap-2 bg-brand-purple/5 border border-brand-purple/10 px-3 py-1.5 rounded-full text-[12px]">
-            <div className="w-2 h-2 bg-brand-purple rounded-full"></div>
-            <span className="text-gray-300">Target: Startup</span>
-          </div>
-          <div className="flex items-center gap-2 bg-brand-teal/5 border border-brand-teal/10 px-3 py-1.5 rounded-full text-[12px]">
-            <div className="w-2 h-2 bg-brand-teal rounded-full"></div>
-            <span className="text-gray-300">DBMS Strength</span>
-          </div>
-          <div className="flex items-center gap-2 bg-brand-orange/5 border border-brand-orange/10 px-3 py-1.5 rounded-full text-[12px]">
-            <div className="w-2 h-2 bg-brand-orange rounded-full"></div>
-            <span className="text-gray-300">Need Practice (Comm.)</span>
-          </div>
-        </div>
-
-        <div className="glass-card p-6 rounded-2xl flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-white leading-tight">3.2</p>
-            <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Readiness Score</p>
-          </div>
-          <div className="text-right">
-            <span className="bg-red-500/10 text-red-500 text-[10px] px-2 py-1 rounded font-bold border border-red-500/20">
-              TIER 1
-            </span>
-            <p className="text-[10px] text-gray-500 mt-1">Beginner Track</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Adaptive Highlight Banner */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-brand-orange/5 border border-brand-orange/20 rounded-2xl p-6 flex flex-col md:flex-row gap-6 items-center"
-      >
-        <div className="w-12 h-12 bg-brand-orange/10 rounded-xl flex items-center justify-center shrink-0">
-          <Zap className="w-6 h-6 text-brand-orange" />
-        </div>
-        <div className="flex-1">
-          <h4 className="text-brand-orange font-bold text-sm mb-1">Adaptive Roadmap Generated — Week 2 Checkpoint Complete</h4>
+          <h1 className="text-2xl font-bold text-white mb-2">No Roadmap Generated</h1>
           <p className="text-gray-400 text-sm leading-relaxed">
-            Your Week 2 checkpoint score was <span className="text-white font-bold">5.5/10</span> (+2.3 from initial). XGBoost detected weak patterns in <span className="text-brand-red font-medium">Arrays</span> and <span className="text-brand-red font-medium">SQL JOINs</span>. Your roadmap has been updated — 3 foundation tasks re-inserted for next week and DSA difficulty adjusted.
+            Please complete the assesment profiling to build your dynamic preparation roadmap.
           </p>
         </div>
-        <div className="flex gap-3 shrink-0">
-          <button className="px-4 py-2 bg-brand-orange text-dark-bg text-sm font-bold rounded-lg hover:bg-brand-orange/90 transition-all">
-            View New Roadmap
-          </button>
-          <button className="px-4 py-2 bg-transparent text-gray-400 text-sm font-medium border border-gray-800 rounded-lg hover:bg-white/5 transition-all">
-            Keep Current
-          </button>
-        </div>
-      </motion.div>
+        <Link
+          href="/profiling"
+          className="inline-flex items-center gap-2 px-7 py-3.5 bg-brand-cyan text-dark-bg font-bold rounded-2xl shadow-glow-cyan hover:bg-brand-cyan/90 transition-all group"
+        >
+          <Sparkles className="w-4 h-4" />
+          Start Profiling
+        </Link>
+      </div>
+    );
+  }
 
-      {/* Phase Overview */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-end">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            Phase Overview <span className="text-xs text-gray-500 font-normal ml-2">6 WEEKS</span>
-          </h2>
+  const allTasks      = roadmap.phases.flatMap((p) => p.tasks);
+  const todayTask     = allTasks.find((t) => t.day === user.currentDay) ?? allTasks[0];
+  const totalDays     = allTasks.length > 0 ? Math.max(...allTasks.map((t) => t.day)) : 45;
+  const doneTasks     = allTasks.filter((t) => t.status === "COMPLETED").length;
+  const progressPct   = Math.min(100, Math.round((doneTasks / allTasks.length) * 100));
+  const readinessTier = user.readinessScore >= 7.5 ? "Advanced" : user.readinessScore >= 4.5 ? "Intermediate" : "Beginner";
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 py-4 sm:py-6 space-y-5 pb-16">
+      
+      {/* ── Compact Header & Inline Progress ── */}
+      <div className="glass-card rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 border border-brand-cyan/20 px-2 py-0.5 rounded-md">
+              {readinessTier} Track
+            </span>
+            <span className="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-md">
+              Day {user.currentDay} of {totalDays}
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">{roadmap.title}</h1>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {ROADMAP_DATA.phases.map((phase) => (
-            <PhaseCard 
-              key={phase.week} 
-              name={phase.name}
-              week={phase.week}
-              days={phase.days}
-              status={phase.status}
+
+        {/* Compact overall progress bar */}
+        <div className="w-full md:w-64 space-y-1.5 shrink-0">
+          <div className="flex justify-between text-xs font-semibold">
+            <span className="text-gray-400">Roadmap Progress</span>
+            <span className="text-brand-cyan">{progressPct}%</span>
+          </div>
+          <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-brand-cyan to-brand-blue rounded-full transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
             />
-          ))}
+          </div>
         </div>
       </div>
 
-      {/* Main Content Grid: Timeline & Sidebar Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Daily Task Timeline */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-white">Daily Task Timeline</h2>
-            <span className="text-xs text-gray-500 font-medium">Showing Week 2 — Days 8-15</span>
+      {/* ── Main Layout Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
+        {/* Left Side: Accordion phases */}
+        <div className="lg:col-span-2 space-y-3">
+          <div className="flex justify-between items-center text-xs text-gray-500 px-1">
+            <span>PREPARATION TRACK</span>
+            <span>{doneTasks}/{allTasks.length} COMPLETED</span>
           </div>
+
+          <div className="space-y-2">
+            {roadmap.phases.map((phase, pi) => {
+              const startDay  = phase.tasks.length ? Math.min(...phase.tasks.map((t) => t.day)) : phase.order * 7 - 6;
+              const endDay    = phase.tasks.length ? Math.max(...phase.tasks.map((t) => t.day)) : phase.order * 7;
+              const phStatus  = user.currentDay >= startDay && user.currentDay <= endDay ? "active"
+                              : user.currentDay > endDay ? "done" : "locked";
+              const phaseDone = phase.tasks.filter((t) => t.status === "COMPLETED").length;
+              const isOpen    = expandedPhaseId === phase.id;
+
+              const phColors = ["cyan", "blue", "teal", "purple", "orange", "green"][pi % 6];
+              const clr: Record<string, string> = {
+                cyan:   "text-brand-cyan border-brand-cyan/20 bg-brand-cyan/5",
+                blue:   "text-brand-blue border-brand-blue/20 bg-brand-blue/5",
+                teal:   "text-brand-teal border-brand-teal/20 bg-brand-teal/5",
+                purple: "text-brand-purple border-brand-purple/20 bg-brand-purple/5",
+                orange: "text-brand-orange border-brand-orange/20 bg-brand-orange/5",
+                green:  "text-brand-green border-brand-green/20 bg-brand-green/5",
+              };
+
+              return (
+                <div
+                  key={phase.id}
+                  className={`rounded-xl border overflow-hidden transition-colors ${
+                    isOpen ? "border-white/10 bg-white/[0.01]" : "border-white/[0.04] bg-dark-card"
+                  }`}
+                >
+                  {/* Accordion Trigger */}
+                  <button
+                    onClick={() => setExpandedPhaseId(isOpen ? null : phase.id)}
+                    className="w-full flex items-center gap-3 p-3.5 text-left focus:outline-none"
+                  >
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs shrink-0 border ${clr[phColors] || clr.cyan}`}>
+                      {phStatus === "done"   ? <CheckCircle2 className="w-4 h-4" /> :
+                       phStatus === "active" ? <Play className="w-3.5 h-3.5 fill-current" /> :
+                                              <Lock className="w-3.5 h-3.5 opacity-40" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-white truncate block">{phase.title}</span>
+                      <p className="text-[10px] text-gray-500">Days {startDay}–{endDay} · {phaseDone}/{phase.tasks.length} done</p>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {/* Tasks nested inside phase */}
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden bg-black/10 border-t border-white/[0.03]"
+                      >
+                        <div className="divide-y divide-white/[0.03]">
+                          {phase.tasks.map((task) => {
+                            const isToday = task.day === user.currentDay;
+                            const isDone  = task.status === "COMPLETED";
+                            const pMeta   = resolvePlatform(task.description, task.type);
+                            const PlatformIcon = pMeta.icon;
+
+                            return (
+                              <div
+                                key={task.id}
+                                className={`flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/[0.01] transition-colors ${
+                                  isToday ? "bg-brand-cyan/[0.03]" : ""
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  {isDone ? (
+                                    <CheckCircle2 className="w-4 h-4 text-brand-green shrink-0" />
+                                  ) : isToday ? (
+                                    <Play className="w-4 h-4 text-brand-cyan fill-brand-cyan/20 shrink-0 animate-pulse" />
+                                  ) : (
+                                    <div className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center shrink-0">
+                                      <span className="text-[8px] text-gray-500 font-bold">{task.day}</span>
+                                    </div>
+                                  )}
+                                  <span className={`text-xs font-medium truncate ${isDone ? "text-gray-600 line-through" : "text-gray-300"}`}>
+                                    {task.title}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border flex items-center gap-1 ${pMeta.color} ${pMeta.bg} ${pMeta.border}`}>
+                                    <PlatformIcon className="w-2.5 h-2.5" />
+                                    {pMeta.label}
+                                  </span>
+                                  {task.description && (
+                                    <a
+                                      href={task.description}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="p-1 rounded-md bg-white/5 border border-white/10 hover:text-brand-cyan hover:border-brand-cyan/20 transition-all text-gray-500"
+                                      title={`Solve on ${pMeta.label}`}
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Side: Sidebar */}
+        <div className="space-y-4">
           
-          <div className="bg-dark-card border border-dark-border rounded-2xl overflow-hidden">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-dark-border bg-white/5">
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider w-16">Day</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Topic & Task</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Resource</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Type</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="bg-brand-blue/5 border-b border-dark-border">
-                  <td colSpan={5} className="px-6 py-2 text-[10px] font-bold text-brand-blue uppercase tracking-widest">
-                    Week 2: Core CS Subjects — Days 8-14
-                  </td>
-                </tr>
-                {ROADMAP_DATA.tasks.filter(t => t.day < 15).map((task) => (
-                  <tr key={task.day} className="border-b border-dark-border/50 hover:bg-white/5 transition-colors group">
-                    <td className="px-6 py-4 text-xs font-bold text-gray-500">{String(task.day).padStart(2, '0')}</td>
-                    <td className="px-6 py-4 text-xs text-gray-300 font-medium">{task.topic}</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-[10px] text-brand-teal bg-brand-teal/10 px-2 py-0.5 rounded font-bold border border-brand-teal/20">
-                        {task.resource}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex flex-col items-center gap-1 opacity-60">
-                        {task.type === "MCQ" ? <Info className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        <span className="text-[9px] uppercase font-bold tracking-tighter">{task.type}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {task.status === "completed" ? (
-                        <div className="w-6 h-6 bg-brand-green/20 border border-brand-green/30 rounded flex items-center justify-center mx-auto">
-                          <CheckCircle2 className="w-4 h-4 text-brand-green" />
-                        </div>
-                      ) : (
-                        <div className="w-6 h-6 bg-brand-red/20 border border-brand-red/30 rounded flex items-center justify-center mx-auto">
-                          <AlertCircle className="w-4 h-4 text-brand-red" />
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                <tr className="bg-brand-orange/5 border-b border-dark-border">
-                  <td colSpan={5} className="px-6 py-2 text-[10px] font-bold text-brand-orange uppercase tracking-widest">
-                    Week 3: DSA Basics — Days 15-21
-                  </td>
-                </tr>
-                <tr className="border-b border-brand-orange/20 bg-brand-orange/10 relative">
-                  <td className="px-6 py-4 text-xs font-bold text-brand-orange relative">
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-orange shadow-glow-orange"></div>
-                    15
-                  </td>
-                  <td className="px-6 py-4 text-xs text-white font-bold">Arrays — Traversal, Search, Insert</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-[10px] text-brand-orange bg-brand-orange/10 px-2 py-0.5 rounded font-bold border border-brand-orange/20">
-                      LeetCode
+          {/* Today's Focus Card */}
+          {todayTask && (() => {
+            const pMeta = resolvePlatform(todayTask.description, todayTask.type);
+            const PlatformIcon = pMeta.icon;
+            return (
+              <div className="relative overflow-hidden rounded-xl border border-brand-cyan/20 bg-gradient-to-br from-brand-cyan/10 via-brand-blue/5 to-transparent p-4">
+                <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-cyan/5 blur-2xl pointer-events-none" />
+                <div className="relative space-y-3">
+                  <div className="flex justify-between items-center text-[10px] font-bold">
+                    <span className="text-brand-cyan uppercase tracking-widest">TODAY · DAY {user.currentDay}</span>
+                    <span className={`px-2 py-0.5 rounded-full border flex items-center gap-1 ${pMeta.color} ${pMeta.bg} ${pMeta.border}`}>
+                      <PlatformIcon className="w-2.5 h-2.5" />
+                      {pMeta.label}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <Play className="w-4 h-4 text-brand-orange" />
-                      <span className="text-[9px] uppercase font-bold tracking-tighter text-brand-orange">Coding</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="w-6 h-6 bg-brand-orange/20 border border-brand-orange/30 rounded flex items-center justify-center mx-auto animate-pulse">
-                      <Play className="w-3 h-3 fill-brand-orange text-brand-orange" />
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Right Sidebar Widgets */}
-        <div className="space-y-8">
-          {/* Readiness Progression */}
-          <div className="glass-card p-6 rounded-2xl space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-brand-cyan" />
-                Readiness Score Progression
-              </h3>
-            </div>
-            <ReadinessChart />
-            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-gray-500">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-brand-cyan rounded-full"></div>
-                <span>Actual</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 border border-brand-blue border-dashed rounded-full"></div>
-                <span>Projected</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Detected Weak Areas */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-brand-red" />
-              Detected Weak Areas
-            </h3>
-            <div className="grid grid-cols-1 gap-3">
-              {ROADMAP_DATA.weakAreas.map((area) => (
-                <div key={area.name} className="bg-dark-card border border-dark-border p-4 rounded-xl flex items-center gap-4 hover:border-white/10 transition-all cursor-default">
-                  <div className={`w-2 h-8 rounded-full ${area.severity === 'HIGH' ? 'bg-brand-red' : 'bg-brand-orange'}`}></div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-white">{area.name}</p>
-                    <p className="text-[10px] text-gray-500">{area.reason}</p>
                   </div>
-                  <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${area.severity === 'HIGH' ? 'text-brand-red bg-brand-red/10 border border-brand-red/20' : 'text-brand-orange bg-brand-orange/10 border border-brand-orange/20'}`}>
-                    {area.severity}
+                  
+                  <h3 className="text-sm font-bold text-white leading-tight">{todayTask.title}</h3>
+                  
+                  {todayTask.description ? (
+                    <a
+                      href={todayTask.description}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2 bg-brand-cyan text-dark-bg font-bold rounded-lg flex items-center justify-center gap-1.5 hover:bg-brand-cyan/95 transition-all text-xs shadow-glow-cyan"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      Solve on {pMeta.label}
+                    </a>
+                  ) : (
+                    <button className="w-full py-2 bg-brand-cyan text-dark-bg font-bold rounded-lg flex items-center justify-center gap-1.5 hover:bg-brand-cyan/95 transition-all text-xs shadow-glow-cyan">
+                      <Play className="w-3.5 h-3.5 fill-dark-bg" />
+                      Start Task
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Solution Submission Section */}
+          <div className="glass-card rounded-xl p-4 space-y-3 border border-white/[0.04]">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider">Submit Code Solution</h4>
+            
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".py,.java,.cpp,.js,.sql,.txt"
+            />
+
+            {uploadStatus === "idle" && !selectedFile && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-white/10 hover:border-brand-cyan/30 hover:bg-brand-cyan/[0.01] rounded-lg p-5 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
+              >
+                <Upload className="w-5 h-5 text-brand-cyan mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-xs font-semibold text-white">Select code file</p>
+                {/* <p className="text-[10px] text-gray-500 mt-1">.py, .java, .cpp, .js, .sql</p> */}
+              </div>
+            )}
+
+            {selectedFile && uploadStatus !== "success" && (
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3 space-y-3">
+                <div className="flex items-start gap-2">
+                  <FileCode className="w-4 h-4 text-brand-cyan shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-white truncate">{selectedFile.name}</p>
+                    <p className="text-[10px] text-gray-500">{(selectedFile.size / 1024).toFixed(1)} KB</p>
+                  </div>
+                </div>
+
+                {uploadStatus === "uploading" ? (
+                  <div className="space-y-1.5">
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-brand-cyan transition-all duration-150" style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                    <p className="text-[9px] text-gray-500 text-right">Uploading... {uploadProgress}%</p>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={triggerUpload}
+                      className="flex-1 py-1.5 bg-brand-cyan text-dark-bg font-bold rounded-md hover:bg-brand-cyan/90 transition-all text-xs"
+                    >
+                      Submit code
+                    </button>
+                    <button
+                      onClick={() => setSelectedFile(null)}
+                      className="px-3 py-1.5 bg-white/5 text-white font-medium rounded-md hover:bg-white/10 transition-all text-xs"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {uploadStatus === "success" && (
+              <div className="border border-brand-green/20 bg-brand-green/[0.02] rounded-lg p-3.5 flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-brand-green/10 flex items-center justify-center shrink-0">
+                  <Check className="w-4 h-4 text-brand-green" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white">Solution Accepted!</p>
+                  <p className="text-[10px] text-gray-500">Day status updated successfully.</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Mini score progression card */}
+          <div className="glass-card rounded-xl p-4 space-y-2 border border-white/[0.04]">
+            <div className="flex justify-between items-center text-[10px] font-bold text-gray-500 uppercase">
+              <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-brand-cyan" />Readiness Curve</span>
+              <span>Score: {user.readinessScore.toFixed(1)}</span>
+            </div>
+            <ReadinessChart score={user.readinessScore} />
+          </div>
+
+          {/* Focus Subjects */}
+          {weakAreas.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider px-1">FOCUS AREAS</span>
+              {weakAreas.map((w, i) => (
+                <div key={i} className="flex items-center gap-2.5 p-3 rounded-lg bg-dark-card border border-dark-border hover:border-white/10 transition-all">
+                  <div className={`w-1 h-6 rounded-full shrink-0 ${w.severity === "HIGH" ? "bg-brand-red" : "bg-brand-orange"}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{w.name}</p>
+                    <p className="text-[10px] text-gray-500 truncate">{w.reason}</p>
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Today's Focus Task Card */}
-          <div className="bg-gradient-to-br from-brand-cyan/20 to-brand-blue/20 border border-brand-cyan/30 rounded-2xl p-6 space-y-4 shadow-glow-cyan relative overflow-hidden">
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-brand-cyan/10 blur-3xl"></div>
-            <div className="relative z-10">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest">Today — Day 15</span>
-                <span className="text-[10px] text-gray-400 font-medium">Week 3</span>
-              </div>
-              <h4 className="text-xl font-bold text-white mb-2">Arrays</h4>
-              <p className="text-xs text-gray-300 font-medium mb-4 italic">Traversal, Search & Insert</p>
-              <p className="text-xs text-gray-400 leading-relaxed mb-6">
-                Solve 3 Easy LeetCode array problems. Upload your solution file after solving. BERT + test case analyzer will grade it.
-              </p>
-              
-              <div className="flex gap-4 mb-6">
-                <div>
-                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Resource</p>
-                  <p className="text-xs text-brand-orange font-bold">LeetCode</p>
-                </div>
-                <div className="border-l border-white/10 pl-4">
-                  <p className="text-[10px] text-gray-500 uppercase font-bold mb-1">Difficulty</p>
-                  <p className="text-xs text-white font-bold">Easy - 3 problems</p>
-                </div>
-              </div>
-
-              <button className="w-full py-3 bg-brand-cyan text-dark-bg font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
-                <Play className="w-4 h-4 fill-dark-bg" />
-                Start Task
-              </button>
-            </div>
-          </div>
-
-          {/* Upload Solution */}
-          <div className="border-2 border-dashed border-dark-border rounded-2xl p-8 flex flex-col items-center justify-center text-center group hover:border-brand-cyan/50 hover:bg-brand-cyan/5 transition-all cursor-pointer">
-            <div className="w-12 h-12 bg-dark-card border border-dark-border rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-              <FileUp className="w-6 h-6 text-brand-cyan" />
-            </div>
-            <p className="text-sm font-bold text-white mb-1">Upload Your Solution</p>
-            <p className="text-[10px] text-gray-500 mb-4">Drag & drop your file here or click to browse</p>
-            <div className="flex gap-2">
-              {['.py', '.java', '.cpp', '.js', '.sql'].map(ext => (
-                <span key={ext} className="text-[9px] text-gray-600 font-bold px-1.5 py-0.5 border border-gray-800 rounded">
-                  {ext}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Adaptive Roadmap Change Section */}
-      <div className="space-y-6 pt-12 border-t border-dark-border">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-cyan/10 rounded-xl flex items-center justify-center shadow-glow-cyan">
-            <MapIcon className="w-6 h-6 text-brand-cyan" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">Adaptive Roadmap — Generated After Week 2 Checkpoint</h2>
-            <p className="text-brand-cyan text-[10px] font-bold uppercase tracking-widest mt-0.5">Updated</p>
-          </div>
+          )}
         </div>
 
-        <div className="bg-dark-card border border-dark-border rounded-3xl p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6">
-            <span className="text-[10px] font-bold text-brand-cyan border border-brand-cyan/30 px-3 py-1 rounded-full bg-brand-cyan/5">XGBoost RE-EVALUATED</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-center">
-            <div className="md:col-span-2 space-y-4">
-              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Initial Roadmap — Day 1</p>
-              <div className="space-y-2">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-white">3.2</span>
-                  <span className="text-gray-600">/10</span>
-                </div>
-                <div className="flex items-center gap-2 text-brand-red text-xs font-bold">
-                  <div className="w-2 h-2 bg-brand-red rounded-sm"></div>
-                  Tier 1 — Beginner
-                </div>
-              </div>
-              <ul className="space-y-1.5">
-                <li className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <div className="w-1 h-1 bg-gray-700 rounded-full"></div>
-                  45-day standard track
-                </li>
-                <li className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <div className="w-1 h-1 bg-gray-700 rounded-full"></div>
-                  Full foundation week included
-                </li>
-                <li className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <div className="w-1 h-1 bg-gray-700 rounded-full"></div>
-                  DSA starts at Day 15
-                </li>
-                <li className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <div className="w-1 h-1 bg-gray-700 rounded-full"></div>
-                  HR Prep at Day 31
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex justify-center">
-              <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center border border-white/10">
-                <ArrowRight className="w-6 h-6 text-gray-600" />
-              </div>
-            </div>
-
-            <div className="md:col-span-2 space-y-4 bg-white/5 p-6 rounded-2xl border border-white/5">
-              <p className="text-[10px] text-brand-orange font-bold uppercase tracking-widest">Adaptive Roadmap — Day 14 RE-EVAL</p>
-              <div className="space-y-2">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-white">5.5</span>
-                  <span className="text-gray-600">/10</span>
-                </div>
-                <div className="flex items-center gap-2 text-brand-orange text-xs font-bold">
-                  <TrendingUp className="w-3 h-3" />
-                  Moving to Tier 1.5
-                </div>
-              </div>
-              <ul className="space-y-1.5">
-                <li className="flex items-center gap-2 text-[11px] text-brand-green font-medium">
-                  <CheckCircle2 className="w-3 h-3" />
-                  Array foundation task re-inserted Week 3
-                </li>
-                <li className="flex items-center gap-2 text-[11px] text-brand-green font-medium">
-                  <CheckCircle2 className="w-3 h-3" />
-                  SQL JOIN drill added Day 16
-                </li>
-                <li className="flex items-center gap-2 text-[11px] text-brand-orange font-medium">
-                  <Zap className="w-3 h-3" />
-                  Project sprint moved to Day 24 (earlier)
-                </li>
-                <li className="flex items-center gap-2 text-[11px] text-brand-orange font-medium">
-                  <Zap className="w-3 h-3" />
-                  HR Prep now at Day 28 (3 days earlier)
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

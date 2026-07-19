@@ -9,19 +9,18 @@ const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false })
 const CartesianGrid = dynamic(() => import("recharts").then(m => m.CartesianGrid), { ssr: false });
 const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
 
-const data = [
-  { day: "Day 1", actual: 3.2, projected: 3.2 },
-  { day: "Day 14", actual: 5.5, projected: 5.8 },
-  { day: "Day 30", projected: 7.2 },
-  { day: "Day 38", projected: 8.6 },
-  { day: "Day 45", projected: 9.1 },
-];
+export function ReadinessChart({ score = 3.2 }: { score?: number }) {
+  const chartData = [
+    { day: "Day 1", actual: score, projected: score },
+    { day: "Day 14", actual: score + 1.2 > 10 ? 10 : score + 1.2, projected: score + 1.5 },
+    { day: "Day 30", projected: score + 2.8 > 10 ? 10 : score + 2.8 },
+    { day: "Day 45", projected: score + 4.0 > 10 ? 10 : score + 4.0 },
+  ];
 
-export function ReadinessChart() {
   return (
     <div className="h-[120px] w-full min-h-[120px]">
       <ResponsiveContainer width="99%" height={120}>
-        <AreaChart data={data}>
+        <AreaChart data={chartData}>
           <defs>
             <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>

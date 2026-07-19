@@ -1,21 +1,46 @@
-datasource db {
-  provider = "sqlite"
-  url      = "file:./placexpert.db"
-}
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
 model User {
-  id           String      @id @default(uuid())
-  email        String      @unique
-  name         String?
-  role         String?
-  currentDay   Int         @default(1)
-  streak       Int         @default(0)
-  roadmaps     Roadmap[]
-  surveyResult SurveyResult? // New relation: A user can have one primary survey result
+
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  image         String?
+  role          String    @default("USER") // USER or ADMIN
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Progress tracking
+  currentDay    Int       @default(1)
+  readinessScore Float     @default(0.0)
+  streak        Int       @default(0)
+
+  // Student profiling answers
+  academicYear       String?
+  domainInterest     String?
+  targetCompany      String?
+  dsaCount           String?
+  projects           String?
+  coreCsStrength     String?
+  codingPlatform     String?
+  aptitude           String?
+  communication      String?
+  mockInterviewExp   String?
+  codingConfidence   String?
+  dailyStudyTime     String?
+  preferredLang      String?
+  placementTimeline  String?
+  readinessLevel     String?
+  
+  roadmaps      Roadmap[]
+  analytics     Analytics[]
+  activities    Activity[]
 }
 
 model SurveyResult {

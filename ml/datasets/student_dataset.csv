@@ -1,0 +1,201 @@
+Academic_Year,Domain_Interest,Target_Company,DSA_Count,Projects,Core_CS_Strength,Coding_Platform,Aptitude,Communication,Mock_Interview_Experience,Coding_Confidence,Weekly_Study_Hours,Hackathons,Internship,CGPA,Readiness_Level
+2nd Year,Web Development,Startup,0-20,None,OOP,GeeksforGeeks,Poor,Fairly Confident,Never,Low,<5,None,No,6.37,Beginner
+2nd Year,Data Science,Service Based,0-20,1,None,Never Used,Average,Fairly Confident,Never,Low,<5,None,No,5.71,Beginner
+4th Year,Web Development,MNC,100-300,2-3,Operating Systems,HackerRank,Good,Fairly Confident,2-5 Times,Medium,10-20,1,No,7.86,Intermediate
+3rd Year,Data Science,Product Based,20-100,4+,Operating Systems,HackerRank,Good,Nervous,Once,High,10-20,1,No,7.39,Intermediate
+3rd Year,Data Science,FAANG,100-300,4+,DSA,LeetCode,Average,Very Confident,2-5 Times,Excellent,20+,1,Yes,9.44,Advanced
+Graduate,Mobile Development,Startup,100-300,None,Operating Systems,GeeksforGeeks,Good,Very Confident,Once,Medium,20+,None,Yes,8.63,Intermediate
+4th Year,Mobile Development,Product Based,100-300,4+,DSA,Codeforces,Excellent,Fairly Confident,Frequently,Excellent,10-20,2-5,Yes,8.5,Advanced
+4th Year,Mobile Development,Startup,0-20,None,None,Never Used,Poor,Need Practice,Never,Medium,5-10,None,No,7.46,Beginner
+Graduate,Full Stack,MNC,100-300,2-3,OOP,LeetCode,Good,Fairly Confident,2-5 Times,High,20+,2-5,No,9.06,Advanced
+2nd Year,Cyber Security,Service Based,0-20,2-3,None,Never Used,Average,Very Nervous,Never,High,<5,None,No,5.63,Beginner
+3rd Year,AI/ML,MNC,20-100,1,DBMS,Never Used,Good,Nervous,2-5 Times,Medium,10-20,2-5,No,7.37,Intermediate
+Graduate,Full Stack,Service Based,100-300,2-3,Computer Networks,GeeksforGeeks,Good,Nervous,Never,Medium,5-10,2-5,No,7.52,Intermediate
+4th Year,Mobile Development,Startup,100-300,2-3,Computer Networks,HackerRank,Good,Need Practice,Frequently,Low,20+,2-5,No,8.8,Intermediate
+4th Year,Cloud,Service Based,20-100,None,None,Never Used,Average,Need Practice,Never,Medium,<5,None,No,5.68,Beginner
+2nd Year,Backend,Service Based,0-20,None,OOP,Never Used,Poor,Very Nervous,Never,Medium,<5,None,No,7.26,Beginner
+4th Year,Backend,Product Based,20-100,1,DBMS,HackerRank,Average,Nervous,Once,Low,5-10,2-5,No,8.31,Intermediate
+3rd Year,Cyber Security,Startup,0-20,1,None,GeeksforGeeks,Good,Very Nervous,Never,Low,<5,None,No,7.57,Beginner
+3rd Year,Backend,Service Based,20-100,None,None,Never Used,Poor,Very Nervous,Once,Low,<5,None,No,6.89,Beginner
+3rd Year,Cloud,Product Based,20-100,1,DBMS,LeetCode,Average,Fairly Confident,Once,Low,20+,1,No,7.93,Intermediate
+4th Year,Cyber Security,Product Based,20-100,4+,Operating Systems,Codeforces,Average,Nervous,Never,Medium,5-10,1,No,8.69,Intermediate
+Graduate,Data Science,FAANG,20-100,1,DBMS,LeetCode,Good,Fairly Confident,2-5 Times,Low,10-20,None,No,8.21,Intermediate
+3rd Year,Data Science,FAANG,20-100,None,OOP,HackerRank,Good,Need Practice,2-5 Times,High,5-10,None,No,8.46,Intermediate
+3rd Year,Web Development,MNC,0-20,None,DBMS,Never Used,Poor,Nervous,Never,Medium,10-20,None,No,5.86,Beginner
+2nd Year,Cloud,Startup,0-20,None,None,Never Used,Good,Need Practice,Never,Medium,<5,None,No,6.28,Beginner
+3rd Year,Backend,FAANG,300+,4+,OOP,CodeChef,Excellent,Very Confident,2-5 Times,Excellent,10-20,5+,Yes,8.9,Advanced
+4th Year,Backend,Startup,100-300,2-3,DSA,LeetCode,Excellent,Very Confident,Frequently,High,10-20,2-5,No,9.06,Advanced
+2nd Year,Backend,Product Based,20-100,1,Operating Systems,HackerRank,Good,Fairly Confident,Never,Medium,10-20,2-5,No,7.8,Intermediate
+3rd Year,Cloud,MNC,0-20,None,None,HackerRank,Poor,Very Nervous,Never,Low,<5,None,No,7.13,Beginner
+Graduate,AI/ML,Startup,100-300,1,DBMS,GeeksforGeeks,Good,Need Practice,Never,Medium,10-20,1,Yes,7.7,Intermediate
+3rd Year,Cyber Security,Product Based,20-100,None,DSA,HackerRank,Good,Nervous,Once,Medium,10-20,1,Yes,8.76,Intermediate
+3rd Year,Cloud,Service Based,20-100,1,Operating Systems,LeetCode,Good,Very Confident,Once,Low,10-20,1,No,8.21,Intermediate
+2nd Year,Web Development,Service Based,0-20,1,None,Never Used,Average,Nervous,Never,Low,<5,None,No,6.27,Beginner
+4th Year,Full Stack,Product Based,100-300,4+,DSA,LeetCode,Good,Fairly Confident,Frequently,High,20+,5+,Yes,8.32,Advanced
+3rd Year,Cloud,Product Based,100-300,4+,DSA,Codeforces,Excellent,Fairly Confident,2-5 Times,Excellent,20+,2-5,Yes,9.31,Advanced
+3rd Year,Cloud,Service Based,20-100,2-3,OOP,HackerRank,Average,Fairly Confident,Once,Excellent,10-20,2-5,Yes,7.52,Intermediate
+3rd Year,Cyber Security,Startup,300+,2-3,DSA,Never Used,Average,Fairly Confident,Once,High,10-20,None,No,7.9,Intermediate
+3rd Year,AI/ML,Startup,100-300,4+,OOP,LeetCode,Good,Need Practice,Frequently,Excellent,20+,1,Yes,8.77,Advanced
+4th Year,Cloud,FAANG,300+,2-3,DSA,Codeforces,Good,Fairly Confident,Frequently,Excellent,10-20,2-5,Yes,9.24,Advanced
+3rd Year,Data Science,MNC,100-300,2-3,DBMS,LeetCode,Excellent,Very Confident,2-5 Times,High,10-20,1,No,9.43,Advanced
+Graduate,AI/ML,Product Based,100-300,1,OOP,GeeksforGeeks,Average,Need Practice,2-5 Times,Medium,5-10,None,No,7.55,Intermediate
+3rd Year,Web Development,MNC,0-20,None,OOP,CodeChef,Average,Nervous,Never,Medium,<5,1,No,7.41,Beginner
+3rd Year,Web Development,Product Based,100-300,2-3,DSA,LeetCode,Excellent,Fairly Confident,2-5 Times,High,10-20,1,Yes,8.78,Advanced
+Graduate,AI/ML,FAANG,300+,2-3,DSA,LeetCode,Good,Very Confident,2-5 Times,Excellent,10-20,2-5,No,9.98,Advanced
+3rd Year,Web Development,Service Based,20-100,1,Operating Systems,GeeksforGeeks,Average,Very Confident,Never,Medium,5-10,5+,No,7.7,Intermediate
+4th Year,Data Science,Product Based,100-300,4+,DSA,LeetCode,Good,Fairly Confident,Frequently,High,20+,2-5,Yes,8.82,Advanced
+Graduate,Web Development,Startup,0-20,2-3,None,Never Used,Poor,Very Nervous,Never,Medium,5-10,2-5,No,5.52,Beginner
+2nd Year,Mobile Development,Startup,20-100,1,None,Never Used,Good,Need Practice,Never,Medium,<5,None,No,7.05,Beginner
+3rd Year,Mobile Development,Startup,20-100,2-3,DBMS,HackerRank,Average,Very Nervous,Never,Medium,5-10,5+,No,7.05,Intermediate
+3rd Year,Backend,Product Based,100-300,2-3,DSA,LeetCode,Good,Very Confident,2-5 Times,High,20+,5+,Yes,8.37,Advanced
+4th Year,Mobile Development,Startup,0-20,None,DBMS,Never Used,Average,Very Nervous,Never,Medium,<5,None,No,5.76,Beginner
+4th Year,Mobile Development,Startup,20-100,2-3,DSA,HackerRank,Average,Fairly Confident,2-5 Times,High,5-10,None,No,8.22,Intermediate
+4th Year,Full Stack,Startup,100-300,2-3,OOP,LeetCode,Excellent,Need Practice,2-5 Times,High,10-20,2-5,Yes,8.99,Advanced
+2nd Year,Mobile Development,MNC,20-100,2-3,OOP,HackerRank,Average,Very Nervous,Once,High,10-20,2-5,Yes,7.16,Intermediate
+4th Year,AI/ML,Startup,100-300,2-3,Operating Systems,LeetCode,Good,Need Practice,2-5 Times,Excellent,10-20,2-5,Yes,8.79,Advanced
+3rd Year,AI/ML,Service Based,20-100,1,None,Never Used,Good,Nervous,Never,Low,10-20,None,No,5.88,Beginner
+3rd Year,Mobile Development,MNC,100-300,2-3,DBMS,HackerRank,Average,Need Practice,2-5 Times,Medium,10-20,None,No,8.45,Intermediate
+4th Year,Web Development,Product Based,0-20,1,Operating Systems,GeeksforGeeks,Average,Need Practice,Once,Low,5-10,1,No,7.92,Intermediate
+4th Year,AI/ML,Product Based,20-100,None,Operating Systems,CodeChef,Good,Need Practice,2-5 Times,High,5-10,None,No,7.11,Intermediate
+4th Year,Mobile Development,Product Based,100-300,2-3,OOP,HackerRank,Average,Nervous,Never,High,<5,1,No,8.45,Intermediate
+3rd Year,Web Development,Service Based,0-20,None,None,Never Used,Poor,Need Practice,Never,Low,<5,None,No,6.22,Beginner
+3rd Year,Backend,MNC,20-100,4+,OOP,Codeforces,Excellent,Need Practice,Once,High,20+,1,Yes,9.79,Advanced
+4th Year,Data Science,MNC,300+,4+,DBMS,LeetCode,Good,Fairly Confident,Once,High,5-10,1,Yes,9.93,Advanced
+3rd Year,Cloud,Product Based,20-100,2-3,DBMS,LeetCode,Good,Need Practice,Once,Medium,<5,None,No,8.21,Intermediate
+3rd Year,Web Development,Service Based,0-20,1,None,Never Used,Average,Nervous,Never,Low,5-10,None,No,7.73,Beginner
+4th Year,Backend,Product Based,300+,2-3,DSA,CodeChef,Excellent,Need Practice,Frequently,High,20+,2-5,Yes,8.67,Advanced
+3rd Year,Full Stack,Startup,0-20,1,Operating Systems,Never Used,Poor,Need Practice,Never,Medium,<5,None,No,7.76,Beginner
+Graduate,Web Development,FAANG,100-300,4+,Computer Networks,LeetCode,Excellent,Very Confident,Once,Excellent,20+,2-5,Yes,8.25,Advanced
+3rd Year,Data Science,Service Based,20-100,None,None,GeeksforGeeks,Poor,Need Practice,Never,Low,5-10,None,No,7.8,Beginner
+4th Year,AI/ML,Product Based,100-300,1,OOP,Never Used,Good,Need Practice,Never,High,5-10,1,No,8.65,Intermediate
+2nd Year,Web Development,Service Based,0-20,None,None,Never Used,Average,Very Nervous,Never,Low,<5,None,No,5.67,Beginner
+4th Year,AI/ML,Service Based,0-20,2-3,None,Never Used,Average,Need Practice,Never,Medium,<5,1,No,7.49,Beginner
+Graduate,Data Science,FAANG,300+,2-3,DSA,LeetCode,Good,Nervous,Once,High,10-20,2-5,Yes,9.74,Advanced
+3rd Year,Cloud,Service Based,100-300,2-3,OOP,GeeksforGeeks,Average,Nervous,Never,Medium,10-20,1,No,7.31,Intermediate
+3rd Year,Data Science,MNC,0-20,2-3,DBMS,HackerRank,Average,Need Practice,Never,Low,5-10,None,No,6.92,Beginner
+3rd Year,Cloud,Startup,300+,2-3,OOP,LeetCode,Good,Fairly Confident,Frequently,Excellent,20+,2-5,Yes,8.33,Advanced
+3rd Year,Full Stack,Startup,100-300,1,Operating Systems,HackerRank,Good,Need Practice,Once,Low,5-10,1,No,7.54,Intermediate
+3rd Year,AI/ML,FAANG,100-300,2-3,DSA,HackerRank,Good,Fairly Confident,Once,Low,10-20,2-5,No,8.37,Intermediate
+4th Year,Full Stack,Product Based,20-100,None,OOP,HackerRank,Excellent,Need Practice,Frequently,High,<5,1,No,8.44,Intermediate
+3rd Year,Data Science,Service Based,20-100,None,Operating Systems,HackerRank,Average,Nervous,Once,Low,<5,None,No,6.2,Beginner
+Graduate,Data Science,Service Based,0-20,1,None,GeeksforGeeks,Poor,Nervous,Never,Low,10-20,1,No,7.01,Beginner
+2nd Year,Mobile Development,Service Based,0-20,2-3,None,Never Used,Poor,Very Nervous,Never,Medium,5-10,None,No,6.76,Beginner
+3rd Year,Web Development,FAANG,300+,4+,DBMS,LeetCode,Excellent,Need Practice,2-5 Times,Excellent,10-20,2-5,Yes,8.57,Advanced
+3rd Year,AI/ML,Service Based,20-100,None,None,Never Used,Average,Nervous,Never,Low,5-10,None,No,7.53,Beginner
+Graduate,AI/ML,Product Based,300+,4+,Operating Systems,LeetCode,Excellent,Very Confident,Frequently,High,10-20,2-5,Yes,9.3,Advanced
+4th Year,Cloud,Service Based,0-20,None,None,Never Used,Average,Nervous,Never,Low,<5,None,No,6.74,Beginner
+4th Year,Cyber Security,Product Based,20-100,2-3,DBMS,LeetCode,Average,Fairly Confident,2-5 Times,High,10-20,2-5,No,7.63,Intermediate
+4th Year,Web Development,Startup,300+,4+,DSA,Codeforces,Excellent,Nervous,Frequently,High,20+,1,Yes,8.49,Advanced
+4th Year,Backend,Product Based,100-300,4+,Computer Networks,LeetCode,Excellent,Very Confident,2-5 Times,Excellent,10-20,5+,No,8.37,Advanced
+2nd Year,Backend,MNC,0-20,None,None,HackerRank,Average,Very Nervous,Never,Low,<5,None,No,5.53,Beginner
+4th Year,AI/ML,MNC,0-20,1,Computer Networks,GeeksforGeeks,Average,Very Confident,Never,Low,<5,None,No,6.75,Beginner
+Graduate,Data Science,Startup,300+,2-3,DSA,LeetCode,Good,Fairly Confident,2-5 Times,High,20+,1,Yes,9.01,Advanced
+4th Year,Cloud,MNC,100-300,4+,DBMS,GeeksforGeeks,Good,Need Practice,Frequently,Excellent,10-20,1,Yes,9.27,Advanced
+4th Year,Cyber Security,Startup,20-100,2-3,DSA,HackerRank,Good,Need Practice,Never,High,5-10,1,No,8.09,Intermediate
+4th Year,Mobile Development,Product Based,20-100,4+,DSA,HackerRank,Average,Fairly Confident,Once,High,<5,None,No,7.12,Intermediate
+2nd Year,Web Development,Product Based,100-300,None,OOP,HackerRank,Average,Nervous,2-5 Times,Low,5-10,None,Yes,8.32,Intermediate
+Graduate,Backend,Startup,100-300,2-3,DBMS,CodeChef,Good,Fairly Confident,2-5 Times,High,20+,5+,Yes,9.43,Advanced
+3rd Year,Backend,Product Based,20-100,2-3,Computer Networks,GeeksforGeeks,Average,Need Practice,Once,Medium,5-10,1,No,8.77,Intermediate
+4th Year,AI/ML,Startup,100-300,1,DSA,HackerRank,Average,Need Practice,Never,High,20+,None,No,7.02,Intermediate
+3rd Year,Full Stack,MNC,0-20,1,None,Never Used,Poor,Nervous,Never,Low,5-10,2-5,No,6.93,Beginner
+3rd Year,Mobile Development,Product Based,20-100,2-3,Operating Systems,CodeChef,Average,Nervous,Once,High,5-10,None,No,7.98,Intermediate
+Graduate,Data Science,Service Based,0-20,None,Operating Systems,GeeksforGeeks,Average,Very Nervous,Never,Low,5-10,None,No,7.48,Beginner
+4th Year,Cloud,FAANG,100-300,4+,Operating Systems,LeetCode,Excellent,Very Confident,Frequently,High,20+,2-5,Yes,9.11,Advanced
+3rd Year,Full Stack,Product Based,100-300,2-3,DSA,LeetCode,Good,Need Practice,Once,Medium,20+,2-5,No,8.05,Intermediate
+3rd Year,Full Stack,Startup,100-300,1,Operating Systems,HackerRank,Good,Need Practice,2-5 Times,Medium,20+,5+,No,7.51,Intermediate
+4th Year,Full Stack,FAANG,100-300,4+,DSA,LeetCode,Excellent,Fairly Confident,2-5 Times,High,20+,2-5,Yes,8.55,Advanced
+3rd Year,AI/ML,FAANG,100-300,4+,DSA,Codeforces,Good,Fairly Confident,2-5 Times,High,20+,5+,Yes,9.85,Advanced
+Graduate,Web Development,Service Based,300+,4+,DSA,Codeforces,Good,Need Practice,2-5 Times,High,20+,2-5,Yes,9.6,Advanced
+Graduate,Full Stack,Service Based,100-300,2-3,DSA,Codeforces,Excellent,Very Confident,2-5 Times,High,20+,2-5,Yes,9.62,Advanced
+2nd Year,Full Stack,Service Based,0-20,1,None,GeeksforGeeks,Poor,Very Nervous,Never,High,<5,None,No,7.0,Beginner
+4th Year,Data Science,MNC,0-20,None,Computer Networks,GeeksforGeeks,Good,Fairly Confident,Once,Medium,5-10,1,No,8.72,Intermediate
+3rd Year,Data Science,Startup,0-20,None,Operating Systems,Never Used,Poor,Need Practice,Never,Low,<5,None,No,6.69,Beginner
+3rd Year,Cloud,Startup,100-300,1,Computer Networks,Never Used,Good,Fairly Confident,Once,Medium,<5,1,Yes,8.41,Intermediate
+3rd Year,Backend,Service Based,0-20,1,None,Never Used,Poor,Need Practice,Never,Low,<5,None,No,6.82,Beginner
+2nd Year,Cloud,Service Based,20-100,1,None,CodeChef,Poor,Need Practice,Never,Medium,<5,None,No,7.62,Beginner
+3rd Year,AI/ML,Startup,0-20,None,None,HackerRank,Poor,Nervous,Never,Low,<5,None,No,6.37,Beginner
+Graduate,Web Development,Startup,300+,2-3,DSA,Codeforces,Excellent,Fairly Confident,Once,High,10-20,2-5,Yes,8.91,Advanced
+Graduate,Backend,Product Based,300+,4+,OOP,LeetCode,Good,Fairly Confident,Frequently,Excellent,20+,5+,Yes,8.87,Advanced
+Graduate,Data Science,Product Based,300+,2-3,DSA,LeetCode,Good,Need Practice,2-5 Times,Excellent,10-20,1,Yes,8.53,Advanced
+3rd Year,Data Science,Product Based,20-100,1,DSA,GeeksforGeeks,Average,Need Practice,Never,High,10-20,2-5,No,7.77,Intermediate
+4th Year,AI/ML,MNC,100-300,4+,DBMS,LeetCode,Good,Very Confident,2-5 Times,High,20+,1,Yes,9.54,Advanced
+2nd Year,Web Development,Service Based,20-100,1,Computer Networks,HackerRank,Average,Need Practice,Never,Excellent,10-20,None,No,8.49,Intermediate
+2nd Year,Cloud,Service Based,0-20,None,None,Never Used,Good,Nervous,Never,Low,<5,None,No,6.08,Beginner
+4th Year,Data Science,FAANG,100-300,4+,Computer Networks,LeetCode,Excellent,Fairly Confident,Frequently,Excellent,10-20,1,Yes,8.68,Advanced
+3rd Year,AI/ML,Startup,0-20,None,None,Never Used,Poor,Need Practice,Never,Medium,5-10,None,No,6.22,Beginner
+4th Year,Backend,Startup,0-20,None,None,Never Used,Average,Nervous,Never,Low,<5,None,No,5.6,Beginner
+4th Year,Data Science,Product Based,100-300,2-3,DSA,LeetCode,Average,Need Practice,Never,Low,5-10,None,No,7.1,Intermediate
+2nd Year,Backend,Service Based,0-20,None,None,Never Used,Average,Need Practice,Never,Low,<5,None,No,6.57,Beginner
+3rd Year,Full Stack,Product Based,300+,2-3,DSA,HackerRank,Good,Fairly Confident,2-5 Times,Excellent,10-20,2-5,Yes,8.31,Advanced
+4th Year,Full Stack,Product Based,100-300,4+,OOP,Codeforces,Excellent,Need Practice,2-5 Times,High,10-20,2-5,No,8.98,Advanced
+3rd Year,Data Science,Startup,20-100,2-3,DSA,GeeksforGeeks,Poor,Need Practice,2-5 Times,Medium,20+,2-5,No,7.36,Intermediate
+4th Year,Data Science,Product Based,20-100,2-3,DBMS,LeetCode,Good,Need Practice,Once,Medium,5-10,None,No,8.79,Intermediate
+3rd Year,Web Development,Startup,20-100,None,OOP,LeetCode,Average,Fairly Confident,Once,High,10-20,None,Yes,7.08,Intermediate
+2nd Year,Backend,Service Based,0-20,1,None,Never Used,Average,Fairly Confident,Once,Low,5-10,None,No,6.76,Beginner
+Graduate,Full Stack,Product Based,100-300,None,Computer Networks,HackerRank,Good,Very Confident,2-5 Times,Medium,10-20,None,Yes,8.79,Intermediate
+4th Year,Data Science,Service Based,0-20,None,DBMS,GeeksforGeeks,Average,Need Practice,Once,Medium,<5,None,No,7.29,Beginner
+4th Year,Backend,Product Based,20-100,1,OOP,HackerRank,Good,Need Practice,2-5 Times,High,20+,2-5,No,8.16,Intermediate
+Graduate,Data Science,Product Based,20-100,2-3,DSA,LeetCode,Excellent,Very Confident,Frequently,Medium,20+,5+,Yes,8.39,Advanced
+4th Year,AI/ML,Service Based,100-300,4+,OOP,LeetCode,Excellent,Need Practice,Frequently,Excellent,20+,1,Yes,9.55,Advanced
+2nd Year,Data Science,Service Based,0-20,None,OOP,Never Used,Average,Fairly Confident,Once,Low,5-10,None,No,6.11,Beginner
+Graduate,Data Science,Product Based,300+,2-3,OOP,LeetCode,Excellent,Need Practice,Frequently,Excellent,10-20,2-5,No,9.97,Advanced
+4th Year,AI/ML,Service Based,0-20,2-3,None,GeeksforGeeks,Poor,Nervous,Never,Low,10-20,1,No,5.77,Beginner
+3rd Year,AI/ML,MNC,300+,2-3,OOP,LeetCode,Good,Nervous,Frequently,Medium,20+,1,No,8.69,Intermediate
+3rd Year,Data Science,Product Based,100-300,2-3,DSA,Codeforces,Good,Fairly Confident,2-5 Times,High,10-20,2-5,No,8.7,Advanced
+4th Year,Full Stack,Service Based,0-20,1,None,GeeksforGeeks,Average,Nervous,Never,Medium,<5,None,No,6.26,Beginner
+2nd Year,Full Stack,Product Based,20-100,1,DBMS,LeetCode,Average,Need Practice,Once,Medium,5-10,2-5,No,7.59,Intermediate
+3rd Year,Web Development,Startup,0-20,1,None,Never Used,Poor,Nervous,Never,Low,<5,None,No,6.99,Beginner
+Graduate,Cyber Security,Product Based,100-300,1,DBMS,CodeChef,Good,Nervous,Once,Medium,<5,None,No,8.5,Intermediate
+Graduate,Backend,MNC,300+,2-3,Computer Networks,LeetCode,Excellent,Need Practice,Frequently,High,20+,2-5,Yes,9.0,Advanced
+2nd Year,AI/ML,Service Based,0-20,None,None,HackerRank,Poor,Need Practice,Never,Medium,5-10,None,No,7.68,Beginner
+4th Year,Cloud,Startup,20-100,1,Operating Systems,HackerRank,Good,Fairly Confident,Once,Low,20+,None,No,7.39,Intermediate
+Graduate,Data Science,Startup,300+,2-3,DSA,GeeksforGeeks,Excellent,Need Practice,2-5 Times,High,10-20,2-5,Yes,8.66,Advanced
+4th Year,AI/ML,FAANG,100-300,2-3,OOP,LeetCode,Excellent,Very Confident,2-5 Times,Excellent,10-20,1,Yes,9.08,Advanced
+4th Year,Mobile Development,Startup,20-100,2-3,DSA,LeetCode,Good,Need Practice,Once,Medium,10-20,1,Yes,7.67,Intermediate
+3rd Year,Cloud,MNC,0-20,None,Computer Networks,Never Used,Poor,Very Nervous,Never,Low,<5,None,No,6.52,Beginner
+3rd Year,Full Stack,Service Based,0-20,None,None,GeeksforGeeks,Average,Very Nervous,Once,Low,5-10,None,No,6.34,Beginner
+Graduate,Full Stack,MNC,0-20,None,None,Never Used,Average,Very Nervous,Never,Low,10-20,None,No,6.9,Beginner
+4th Year,Backend,Service Based,20-100,1,OOP,GeeksforGeeks,Good,Nervous,Never,Medium,10-20,1,No,8.19,Intermediate
+3rd Year,Backend,Service Based,20-100,1,DSA,HackerRank,Good,Need Practice,Never,High,<5,2-5,No,7.17,Intermediate
+2nd Year,Backend,Startup,20-100,None,None,Never Used,Average,Very Nervous,Never,Low,<5,None,No,7.26,Beginner
+3rd Year,Cyber Security,MNC,20-100,1,Computer Networks,LeetCode,Average,Need Practice,2-5 Times,Medium,5-10,None,No,7.68,Intermediate
+4th Year,Data Science,MNC,300+,4+,DSA,LeetCode,Average,Fairly Confident,2-5 Times,Excellent,5-10,5+,Yes,9.65,Advanced
+4th Year,Data Science,Startup,20-100,4+,OOP,HackerRank,Good,Fairly Confident,Never,Excellent,10-20,None,No,7.62,Intermediate
+2nd Year,Mobile Development,Service Based,0-20,2-3,None,Never Used,Poor,Very Nervous,Never,Low,5-10,1,No,6.85,Beginner
+4th Year,AI/ML,Service Based,0-20,None,None,Never Used,Poor,Nervous,Never,Medium,<5,1,No,6.14,Beginner
+3rd Year,Web Development,Startup,100-300,1,OOP,HackerRank,Average,Nervous,Once,Medium,5-10,None,No,7.51,Intermediate
+2nd Year,Cloud,Startup,0-20,1,None,GeeksforGeeks,Poor,Nervous,Never,Low,<5,None,No,7.06,Beginner
+4th Year,Data Science,Startup,100-300,1,None,Never Used,Average,Very Nervous,Never,Low,<5,None,No,7.77,Beginner
+2nd Year,Cloud,Service Based,0-20,1,None,Never Used,Average,Very Nervous,Never,Medium,<5,None,No,6.72,Beginner
+4th Year,Cloud,Product Based,20-100,2-3,Operating Systems,CodeChef,Good,Fairly Confident,Once,Medium,5-10,None,No,7.13,Intermediate
+4th Year,Full Stack,FAANG,300+,2-3,DSA,LeetCode,Excellent,Fairly Confident,2-5 Times,Excellent,10-20,2-5,Yes,9.26,Advanced
+Graduate,Data Science,Startup,0-20,None,Operating Systems,HackerRank,Poor,Nervous,Never,High,<5,None,No,7.5,Beginner
+4th Year,AI/ML,MNC,300+,2-3,DBMS,LeetCode,Excellent,Fairly Confident,Frequently,High,5-10,2-5,Yes,9.52,Advanced
+4th Year,Full Stack,MNC,20-100,1,Operating Systems,HackerRank,Poor,Very Confident,Once,Excellent,5-10,None,No,7.89,Intermediate
+3rd Year,Web Development,Service Based,0-20,2-3,None,GeeksforGeeks,Average,Very Nervous,Once,Medium,<5,None,No,5.85,Beginner
+4th Year,AI/ML,Startup,20-100,1,Operating Systems,HackerRank,Average,Fairly Confident,2-5 Times,Medium,10-20,None,Yes,8.61,Intermediate
+4th Year,Full Stack,Product Based,300+,2-3,OOP,GeeksforGeeks,Excellent,Need Practice,Frequently,High,10-20,1,Yes,9.93,Advanced
+3rd Year,Full Stack,FAANG,100-300,2-3,Operating Systems,LeetCode,Excellent,Very Confident,2-5 Times,Excellent,10-20,2-5,Yes,8.72,Advanced
+2nd Year,Full Stack,FAANG,100-300,1,Computer Networks,Never Used,Average,Need Practice,2-5 Times,High,10-20,2-5,No,8.23,Intermediate
+4th Year,Mobile Development,Startup,0-20,None,None,Never Used,Good,Very Nervous,2-5 Times,Low,10-20,None,No,6.5,Beginner
+4th Year,AI/ML,Startup,100-300,4+,OOP,GeeksforGeeks,Excellent,Fairly Confident,Frequently,High,20+,None,Yes,8.87,Advanced
+4th Year,Cyber Security,Startup,0-20,None,DSA,Never Used,Average,Very Nervous,Never,Low,<5,None,No,7.53,Beginner
+3rd Year,AI/ML,Product Based,100-300,4+,DSA,GeeksforGeeks,Excellent,Very Confident,2-5 Times,Excellent,20+,1,Yes,9.86,Advanced
+3rd Year,Cyber Security,Product Based,100-300,2-3,OOP,LeetCode,Good,Need Practice,Never,Low,5-10,None,Yes,7.93,Intermediate
+3rd Year,Mobile Development,Service Based,0-20,None,Operating Systems,HackerRank,Good,Nervous,Never,Low,<5,None,No,5.84,Beginner
+3rd Year,Data Science,Service Based,20-100,1,DSA,LeetCode,Excellent,Need Practice,Never,Low,<5,2-5,No,8.39,Intermediate
+3rd Year,Full Stack,Product Based,300+,4+,DSA,Codeforces,Excellent,Very Confident,Frequently,Excellent,10-20,2-5,Yes,9.67,Advanced
+4th Year,Data Science,Startup,0-20,None,Computer Networks,Never Used,Average,Need Practice,Never,Low,<5,None,No,7.33,Beginner
+3rd Year,Web Development,Service Based,0-20,2-3,DBMS,CodeChef,Poor,Fairly Confident,Once,Low,5-10,None,No,6.32,Beginner
+4th Year,Cyber Security,Startup,20-100,1,Computer Networks,GeeksforGeeks,Good,Nervous,2-5 Times,Medium,10-20,1,No,8.66,Intermediate
+2nd Year,Mobile Development,Service Based,0-20,None,None,GeeksforGeeks,Average,Need Practice,Never,Low,10-20,None,No,5.61,Beginner
+2nd Year,Mobile Development,MNC,20-100,1,OOP,HackerRank,Average,Very Nervous,2-5 Times,Medium,5-10,None,No,7.06,Intermediate
+4th Year,Data Science,Service Based,0-20,None,Computer Networks,HackerRank,Good,Need Practice,Never,Low,<5,1,No,5.7,Beginner
+4th Year,Full Stack,Service Based,20-100,None,DBMS,HackerRank,Average,Very Nervous,Never,Medium,<5,None,No,6.62,Beginner
+4th Year,Data Science,Product Based,20-100,1,Computer Networks,GeeksforGeeks,Good,Nervous,Once,Low,20+,None,No,7.56,Intermediate
+3rd Year,Cloud,Startup,0-20,None,Computer Networks,HackerRank,Poor,Very Nervous,Never,Medium,<5,None,No,7.17,Beginner
+Graduate,Cloud,Service Based,0-20,1,None,Never Used,Average,Fairly Confident,Never,Medium,<5,None,No,6.72,Beginner
+4th Year,Mobile Development,FAANG,300+,2-3,OOP,LeetCode,Good,Very Confident,Frequently,Excellent,20+,None,No,8.67,Advanced
+4th Year,Cyber Security,MNC,300+,2-3,OOP,Codeforces,Excellent,Fairly Confident,2-5 Times,High,10-20,1,Yes,8.2,Advanced
+Graduate,Data Science,FAANG,300+,4+,DSA,Codeforces,Good,Very Confident,Frequently,Excellent,20+,2-5,Yes,8.68,Advanced
+4th Year,Cyber Security,Product Based,300+,4+,DSA,HackerRank,Excellent,Very Confident,Once,High,20+,2-5,Yes,8.77,Advanced
