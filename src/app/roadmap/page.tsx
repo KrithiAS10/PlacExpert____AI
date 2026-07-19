@@ -493,7 +493,7 @@ export default function RoadmapPage() {
               >
                 <Upload className="w-5 h-5 text-brand-cyan mb-2 group-hover:scale-110 transition-transform" />
                 <p className="text-xs font-semibold text-white">Select code file</p>
-                <p className="text-[10px] text-gray-500 mt-1">.py, .java, .cpp, .js, .sql</p>
+                {/* <p className="text-[10px] text-gray-500 mt-1">.py, .java, .cpp, .js, .sql</p> */}
               </div>
             )}
 
