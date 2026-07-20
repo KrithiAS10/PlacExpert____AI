@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 async function runPythonScript(scriptPath: string, args: string[]): Promise<string> {
   const { spawn } = await import('child_process');
@@ -70,13 +71,18 @@ export async function POST(req: Request) {
     const roadmapData = JSON.parse(roadmapOutput);
     
     // 5. Update user and save roadmap to database
-    const userEmail = "krithi@example.com";
+    const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value;
+    if (!userEmail) {
+      return NextResponse.json({ error: "User session not found" }, { status: 401 });
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: userEmail }
     });
     
     if (!user) {
-      return NextResponse.json({ error: "Default user krithi@example.com not found in database" }, { status: 404 });
+      return NextResponse.json({ error: "User not found in database" }, { status: 404 });
     }
     
     // Calculate numeric readiness score

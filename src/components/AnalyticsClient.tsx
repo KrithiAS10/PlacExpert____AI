@@ -35,8 +35,17 @@ interface AnalyticsClientProps {
 
 export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
   console.log("Chart data available:", !!chartData); // Use it to avoid lint warning
+  
+  const isNewUser = !user.readinessScore || user.readinessScore === 0;
+
   // Map DB data to chart formats
-  const skillData = [
+  const skillData = isNewUser ? [
+    { name: 'DSA', score: 0, color: '#a855f7' },
+    { name: 'DBMS', score: 0, color: '#3b82f6' },
+    { name: 'OS', score: 0, color: '#f97316' },
+    { name: 'CN', score: 0, color: '#14b8a6' },
+    { name: 'Web Dev', score: 0, color: '#06b6d4' },
+  ] : [
     { name: 'DSA', score: 85, color: '#a855f7' },
     { name: 'DBMS', score: 65, color: '#3b82f6' },
     { name: 'OS', score: 45, color: '#f97316' },
@@ -44,17 +53,49 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
     { name: 'Web Dev', score: 90, color: '#06b6d4' },
   ];
 
-  const domainDistribution = [
+  const domainDistribution = isNewUser ? [
+    { name: 'Theory', value: 0, color: '#3b82f6' },
+    { name: 'Coding', value: 0, color: '#06b6d4' },
+    { name: 'System Design', value: 0, color: '#a855f7' },
+  ] : [
     { name: 'Theory', value: 30, color: '#3b82f6' },
     { name: 'Coding', value: 50, color: '#06b6d4' },
     { name: 'System Design', value: 20, color: '#a855f7' },
   ];
 
   const stats = [
-    { label: "Overall Readiness", value: `${(user.readinessScore * 10).toFixed(0)}%`, sub: "Calculated", icon: Target, color: "text-brand-cyan", up: true },
-    { label: "Study Hours", value: "43.5h", sub: "Avg 6.2h / day", icon: Clock, color: "text-brand-purple", up: true },
-    { label: "Solved Problems", value: "128", sub: "Top 15% of peers", icon: Award, color: "text-brand-orange", up: true },
-    { label: "Concept Clarity", value: "8.4/10", sub: "AI Assessment", icon: Activity, color: "text-brand-teal", up: false },
+    { 
+      label: "Overall Readiness", 
+      value: isNewUser ? "Yet to start" : `${(user.readinessScore * 10).toFixed(0)}%`, 
+      sub: isNewUser ? "Assessment pending" : "Calculated", 
+      icon: Target, 
+      color: "text-brand-cyan", 
+      up: true 
+    },
+    { 
+      label: "Study Hours", 
+      value: isNewUser ? "0h" : "43.5h", 
+      sub: isNewUser ? "No active sessions" : "Avg 6.2h / day", 
+      icon: Clock, 
+      color: "text-brand-purple", 
+      up: true 
+    },
+    { 
+      label: "Solved Problems", 
+      value: isNewUser ? "0" : "128", 
+      sub: isNewUser ? "Start solving to track" : "Top 15% of peers", 
+      icon: Award, 
+      color: "text-brand-orange", 
+      up: true 
+    },
+    { 
+      label: "Concept Clarity", 
+      value: isNewUser ? "Yet to start" : "8.4/10", 
+      sub: isNewUser ? "No assessment data" : "AI Assessment", 
+      icon: Activity, 
+      color: "text-brand-teal", 
+      up: false 
+    },
   ];
 
   return (

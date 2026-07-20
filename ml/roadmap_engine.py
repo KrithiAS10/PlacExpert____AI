@@ -5,8 +5,22 @@ Rule-based engine that generates personalized placement preparation
 roadmaps based on readiness level, weak areas, daily study time,
 preferred language, and placement timeline.
 
-Each task now carries a `resource_url` pointing to a real LeetCode /
-HackerRank / GFG page so the frontend can render a direct clickable link.
+All resource URLs point to 100% FREE platforms:
+  - LeetCode (free tier)         — coding problems
+  - GeeksForGeeks                — theory articles
+  - freeCodeCamp                 — structured free courses
+  - The Odin Project             — full-stack curriculum
+  - CS50 (Harvard OpenCourseWare)— computer science fundamentals
+  - Khan Academy                 — math / aptitude
+  - MIT OpenCourseWare           — advanced CS
+  - W3Schools / MDN Web Docs     — web references
+  - YouTube (curated playlists)  — video lectures
+
+task_subtype field:
+  "PROBLEM"  → LeetCode/GFG practice problem (quiz-gated on completion)
+  "COURSE"   → Free course / article to read  (quiz-gated on completion)
+  "PROJECT"  → Build something (quiz-gated)
+  "MOCK"     → Internal mock interview
 """
 
 import os
@@ -14,7 +28,7 @@ import sys
 import json
 
 # ---------------------------------------------------------------------------
-# RESOURCE URL MAP  — real URLs per topic / task keyword
+# RESOURCE URL MAP — 100% FREE platforms only
 # ---------------------------------------------------------------------------
 RESOURCE_URLS = {
     # DSA — Arrays
@@ -53,18 +67,19 @@ RESOURCE_URLS = {
     "System Design Fundamentals":                    "https://www.geeksforgeeks.org/system-design-tutorial/",
     "Competitive Programming Patterns":              "https://leetcode.com/explore/",
 
-    # DBMS
+    # DBMS — all free
     "ER Diagrams":                                   "https://www.geeksforgeeks.org/introduction-of-er-model/",
+    "Normalization (1NF-BCNF)":                      "https://www.geeksforgeeks.org/normal-forms-in-dbms/",
     "Normalization (1NF–BCNF)":                      "https://www.geeksforgeeks.org/normal-forms-in-dbms/",
-    "Basic SQL — SELECT, WHERE, ORDER BY":            "https://www.hackerrank.com/domains/sql",
-    "SQL JOINs — INNER, LEFT, RIGHT, CROSS":          "https://www.hackerrank.com/domains/sql",
+    "Basic SQL — SELECT, WHERE, ORDER BY":            "https://www.w3schools.com/sql/",
+    "SQL JOINs — INNER, LEFT, RIGHT, CROSS":          "https://www.w3schools.com/sql/sql_join.asp",
     "Subqueries and CTEs":                           "https://leetcode.com/tag/database/",
     "Indexing and Query Optimization":               "https://www.geeksforgeeks.org/indexing-in-databases-set-1/",
     "Transactions and ACID Properties":              "https://www.geeksforgeeks.org/acid-properties-in-dbms/",
     "Concurrency Control":                           "https://www.geeksforgeeks.org/concurrency-control-in-dbms/",
     "Database Sharding and Replication":             "https://www.geeksforgeeks.org/database-sharding-a-system-design-concept/",
 
-    # OS
+    # OS — all free
     "Process vs Thread":                             "https://www.geeksforgeeks.org/difference-between-process-and-thread/",
     "CPU Scheduling — FCFS, SJF, Round Robin":        "https://www.geeksforgeeks.org/cpu-scheduling-in-operating-systems/",
     "Deadlock — Detection, Prevention, Avoidance":   "https://www.geeksforgeeks.org/introduction-of-deadlock-in-operating-system/",
@@ -73,7 +88,7 @@ RESOURCE_URLS = {
     "Disk Scheduling":                               "https://www.geeksforgeeks.org/disk-scheduling-algorithms/",
     "OS Internals — System Calls":                   "https://www.geeksforgeeks.org/introduction-of-system-call/",
 
-    # CN
+    # CN — all free
     "OSI and TCP/IP Model":                          "https://www.geeksforgeeks.org/layers-of-osi-model/",
     "IP Addressing and Subnetting":                  "https://www.geeksforgeeks.org/introduction-classful-ip-addressing/",
     "TCP vs UDP":                                    "https://www.geeksforgeeks.org/differences-between-tcp-and-udp/",
@@ -81,7 +96,7 @@ RESOURCE_URLS = {
     "Network Security — TLS, Firewalls":             "https://www.geeksforgeeks.org/transport-layer-security-tls/",
     "Socket Programming":                            "https://www.geeksforgeeks.org/socket-programming-python/",
 
-    # OOP
+    # OOP — all free
     "Classes, Objects, Encapsulation":               "https://www.geeksforgeeks.org/object-oriented-programming-oops-concept-in-java/",
     "Inheritance and Polymorphism":                  "https://www.geeksforgeeks.org/inheritance-in-c/",
     "Abstraction, Interfaces":                       "https://www.geeksforgeeks.org/abstraction-in-cpp/",
@@ -89,19 +104,19 @@ RESOURCE_URLS = {
     "Design Patterns — Singleton, Factory, Observer": "https://www.geeksforgeeks.org/design-patterns-set-1-introduction/",
     "UML Diagrams":                                  "https://www.geeksforgeeks.org/unified-modeling-language-uml-introduction/",
 
-    # Language-specific
-    "Practice Python List Comprehensions":           "https://www.hackerrank.com/domains/python",
+    # Language-specific — replaced HackerRank premium with free alternatives
+    "Practice Python List Comprehensions":           "https://www.freecodecamp.org/news/list-comprehension-in-python/",
     "Learn Python Collections Module":              "https://www.geeksforgeeks.org/python-collections-module/",
     "Learn Java Collections Framework":             "https://www.geeksforgeeks.org/collections-in-java-2/",
     "Practice Java Streams and Lambdas":            "https://www.geeksforgeeks.org/stream-in-java/",
     "Learn C++ STL — Vectors, Maps, Sets":           "https://www.geeksforgeeks.org/the-c-standard-template-library-stl/",
     "Practice C++ Smart Pointers":                  "https://www.geeksforgeeks.org/smart-pointers-cpp/",
-    "Practice ES6+ Features — Promises, Async/Await": "https://www.geeksforgeeks.org/javascript-promises/",
-    "Learn Node.js Fundamentals":                   "https://www.geeksforgeeks.org/nodejs/",
+    "Practice ES6+ Features — Promises, Async/Await": "https://javascript.info/promise-basics",
+    "Learn Node.js Fundamentals":                   "https://www.freecodecamp.org/news/what-is-node-js/",
     "Practice Pointer Arithmetic":                  "https://www.geeksforgeeks.org/pointer-arithmetics-in-c-with-examples/",
     "Implement Data Structures in C":               "https://www.geeksforgeeks.org/data-structures/",
 
-    # System Design
+    # System Design — free resources
     "System Design — URL Shortener":                "https://www.geeksforgeeks.org/system-design-url-shortening-service/",
     "System Design — Chat Application":             "https://www.geeksforgeeks.org/system-design-of-whatsapp-messenger/",
     "System Design — Rate Limiter":                 "https://www.geeksforgeeks.org/system-design-rate-limiter/",
@@ -111,10 +126,11 @@ RESOURCE_URLS = {
 FALLBACK_URLS = {
     "PROBLEM":  "https://leetcode.com/problemset/",
     "TOPIC":    "https://www.geeksforgeeks.org/",
-    "MOCK":     "https://www.hackerrank.com/interview/interview-preparation-kit",
+    "COURSE":   "https://www.freecodecamp.org/",
+    "MOCK":     "https://www.geeksforgeeks.org/interview-preparation/",
     "REVISION": "https://www.geeksforgeeks.org/",
     "SETUP":    "https://www.geeksforgeeks.org/",
-    "PROJECT":  "https://www.geeksforgeeks.org/projects/",
+    "PROJECT":  "https://www.freecodecamp.org/news/tag/projects/",
 }
 
 def _resolve_url(title: str, task_type: str) -> str:
@@ -324,26 +340,30 @@ def _get_phase_tasks(focus, readiness, language, weak_areas, strength, tasks_per
     tasks = []
 
     if focus == "foundation":
+        # FREE language learning URLs (no account required to read)
         lang_url = {
-            "Python":     "https://www.hackerrank.com/domains/python",
-            "Java":       "https://www.hackerrank.com/domains/java",
-            "C++":        "https://www.hackerrank.com/domains/cpp",
-            "JavaScript": "https://www.hackerrank.com/domains/fp",
-            "C":          "https://www.hackerrank.com/domains/c",
-        }.get(language, "https://www.hackerrank.com/")
+            "Python":     "https://www.freecodecamp.org/news/the-python-handbook/",
+            "Java":       "https://www.freecodecamp.org/news/the-java-handbook/",
+            "C++":        "https://www.freecodecamp.org/news/the-cplusplus-handbook/",
+            "JavaScript": "https://javascript.info/",
+            "C":          "https://www.geeksforgeeks.org/c-programming-language/",
+        }.get(language, "https://www.freecodecamp.org/")
 
         tasks = [
             {"title": f"Set up {language} development environment & IDE",
-             "type": "SETUP", "resource_url": "https://www.geeksforgeeks.org/setting-up-development-environment/"},
+             "type": "SETUP", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/setting-up-development-environment/"},
             {"title": "Create GitHub profile and push your first repository",
-             "type": "SETUP", "resource_url": "https://www.geeksforgeeks.org/introduction-to-github/"},
+             "type": "SETUP", "task_subtype": "COURSE",
+             "resource_url": "https://www.freecodecamp.org/news/git-and-github-for-beginners/"},
             {"title": "Understand placement process — rounds, expectations, timeline",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/placement-preparation-a-students-guide/"},
-            {"title": f"Solve 10 warm-up {language} problems on HackerRank",
-             "type": "PROBLEM", "resource_url": lang_url},
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/placement-preparation-a-students-guide/"},
+            {"title": f"Complete freeCodeCamp {language} warm-up challenges (10 problems)",
+             "type": "PROBLEM", "task_subtype": "PROBLEM", "resource_url": lang_url},
         ]
         for t in LANGUAGE_TASKS.get(language, []):
-            tasks.append({"title": t, "type": "TOPIC", "resource_url": _resolve_url(t, "TOPIC")})
+            tasks.append({"title": t, "type": "TOPIC", "task_subtype": "COURSE", "resource_url": _resolve_url(t, "TOPIC")})
 
     elif focus == "core_cs":
         subjects = ["DSA", "DBMS", "OS", "CN", "OOP"]
@@ -354,6 +374,7 @@ def _get_phase_tasks(focus, readiness, language, weak_areas, strength, tasks_per
                 tasks.append({
                     "title":        f"{subj} — {topic}",
                     "type":         "TOPIC",
+                    "task_subtype": "COURSE",
                     "priority":     priority,
                     "resource_url": _resolve_url(topic, "TOPIC"),
                 })
@@ -362,84 +383,107 @@ def _get_phase_tasks(focus, readiness, language, weak_areas, strength, tasks_per
         pool = TOPIC_POOLS.get("DSA", {}).get(readiness, [])
         for topic in pool:
             url = _resolve_url(topic, "PROBLEM")
-            tasks.append({"title": topic, "type": "PROBLEM", "resource_url": url})
-        # Tiered LeetCode challenge
+            tasks.append({"title": topic, "type": "PROBLEM", "task_subtype": "PROBLEM", "resource_url": url})
+        # Tiered LeetCode challenge (free tier — no premium required)
         diff = {"Beginner": "easy", "Intermediate": "medium", "Advanced": "hard"}.get(readiness, "easy")
         tasks.append({
-            "title":        f"Solve 10 {readiness}-level LeetCode problems",
+            "title":        f"Solve 10 {readiness}-level LeetCode problems (free tier)",
             "type":         "PROBLEM",
+            "task_subtype": "PROBLEM",
             "resource_url": _leetcode_url(diff),
         })
 
     elif focus == "projects":
         if readiness == "Beginner":
             tasks = [
-                {"title": "Build a personal portfolio website",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/building-portfolio-website-html-css-javascript/"},
+                {"title": "Build a personal portfolio website (HTML/CSS/JS)",
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/how-to-build-a-portfolio-website-html-css-and-js/"},
                 {"title": "Build a CRUD To-Do app with your preferred stack",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/how-to-build-a-todo-app-with-flask/"},
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/how-to-build-a-todo-app-with-react/"},
             ]
         elif readiness == "Intermediate":
             tasks = [
-                {"title": "Build a full-stack web app with authentication (JWT/OAuth)",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/jwt-authentication-with-django-rest-framework/"},
+                {"title": "Build a full-stack web app with JWT authentication",
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/how-to-secure-your-mern-stack-application/"},
                 {"title": "Contribute to an open-source project on GitHub",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/contributing-to-open-source-projects/"},
-                {"title": "Deploy your project on Vercel / Render / AWS",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/how-to-deploy-a-node-js-express-application-on-aws/"},
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/how-to-contribute-to-open-source-projects-beginners-guide/"},
+                {"title": "Deploy your project for free on Vercel or Render",
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/how-to-deploy-your-site-using-vercel/"},
             ]
         else:
             tasks = [
-                {"title": "Build a scalable microservices project with Docker",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/microservices-architecture/"},
-                {"title": "Implement a real-time feature using WebSockets",
-                 "type": "PROJECT", "resource_url": "https://www.geeksforgeeks.org/web-socket-in-node-js/"},
+                {"title": "Build a scalable microservices project with Docker (free)",
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/a-beginners-guide-to-docker/"},
+                {"title": "Implement a real-time chat feature using WebSockets",
+                 "type": "PROJECT", "task_subtype": "PROJECT",
+                 "resource_url": "https://www.freecodecamp.org/news/how-to-build-a-real-time-chat-app-with-reactjs-socketio-node/"},
             ]
 
     elif focus == "interview":
         tasks = [
             {"title": "Practice 30 HR interview questions with answers",
-             "type": "MOCK", "resource_url": "https://www.geeksforgeeks.org/top-50-hr-interview-questions-with-answers/"},
-            {"title": "Mock technical interview — DSA round (timed)",
-             "type": "MOCK", "resource_url": "https://www.hackerrank.com/interview/interview-preparation-kit"},
+             "type": "MOCK", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/top-50-hr-interview-questions-with-answers/"},
+            {"title": "Mock technical interview — DSA round (timed, in-platform)",
+             "type": "MOCK", "task_subtype": "MOCK",
+             "resource_url": "/mock-interview"},
             {"title": "Practice explaining your projects in 2 minutes (elevator pitch)",
-             "type": "MOCK", "resource_url": "https://www.geeksforgeeks.org/tips-for-technical-interview-preparation/"},
+             "type": "MOCK", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/tips-for-technical-interview-preparation/"},
             {"title": "Behavioral question prep — STAR method with examples",
-             "type": "MOCK", "resource_url": "https://www.geeksforgeeks.org/star-interview-technique/"},
+             "type": "MOCK", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/star-interview-technique/"},
         ]
 
     elif focus == "system_design":
         tasks = [
             {"title": "System Design — URL Shortener (Bit.ly clone)",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/system-design-url-shortening-service/"},
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/system-design-url-shortening-service/"},
             {"title": "System Design — WhatsApp / Chat Application",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/system-design-of-whatsapp-messenger/"},
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/system-design-of-whatsapp-messenger/"},
             {"title": "System Design — Rate Limiter",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/system-design-rate-limiter/"},
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/system-design-rate-limiter/"},
             {"title": "Database Design — E-commerce schema with indexing",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/system-design-of-e-commerce-website/"},
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/system-design-of-e-commerce-website/"},
         ]
 
     elif focus == "company":
         tasks = [
             {"title": "Research target companies — recent interview patterns & OA format",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/must-do-coding-questions-company-wise/"},
-            {"title": "Solve previous year company-specific questions",
-             "type": "PROBLEM", "resource_url": "https://leetcode.com/problemset/?listId=top-interview-questions"},
-            {"title": "Practice aptitude, logical reasoning & verbal ability",
-             "type": "PROBLEM", "resource_url": "https://www.geeksforgeeks.org/aptitude-questions-and-answers/"},
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/must-do-coding-questions-company-wise/"},
+            {"title": "Solve previous year company-specific questions (LeetCode free)",
+             "type": "PROBLEM", "task_subtype": "PROBLEM",
+             "resource_url": "https://leetcode.com/problemset/?listId=top-interview-questions"},
+            {"title": "Practice aptitude & logical reasoning (free)",
+             "type": "PROBLEM", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/aptitude-questions-and-answers/"},
         ]
 
     elif focus == "sprint":
         tasks = [
             {"title": "Revision — Core CS cheat sheets (OS, CN, DBMS, OOP)",
-             "type": "REVISION", "resource_url": "https://www.geeksforgeeks.org/last-minute-notes-operating-systems/"},
-            {"title": "Revision — Top 75 LeetCode must-solve problems",
-             "type": "PROBLEM", "resource_url": "https://leetcode.com/list/xi4ci4ig/"},
-            {"title": "Final full mock interview simulation (DSA + HR)",
-             "type": "MOCK", "resource_url": "https://www.hackerrank.com/interview/interview-preparation-kit"},
-            {"title": "Polish resume, update LinkedIn, prepare portfolio links",
-             "type": "TOPIC", "resource_url": "https://www.geeksforgeeks.org/how-to-write-a-good-resume/"},
+             "type": "REVISION", "task_subtype": "COURSE",
+             "resource_url": "https://www.geeksforgeeks.org/last-minute-notes-operating-systems/"},
+            {"title": "Revision — Top 75 LeetCode must-solve problems (free)",
+             "type": "PROBLEM", "task_subtype": "PROBLEM",
+             "resource_url": "https://leetcode.com/list/xi4ci4ig/"},
+            {"title": "Final full mock interview simulation (DSA + HR) — in-platform",
+             "type": "MOCK", "task_subtype": "MOCK",
+             "resource_url": "/mock-interview"},
+            {"title": "Polish resume & LinkedIn — free templates on Canva",
+             "type": "TOPIC", "task_subtype": "COURSE",
+             "resource_url": "https://www.freecodecamp.org/news/how-to-write-a-great-resume-for-software-engineers/"},
         ]
 
     return tasks[:tasks_per_day * 6]

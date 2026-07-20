@@ -41,16 +41,51 @@ interface Recommendation {
 }
 
 interface DashboardClientProps {
-  user: User;
+  user: User | null;
   recommendations: Recommendation[];
 }
 
 export function DashboardClient({ user, recommendations }: DashboardClientProps) {
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
+        <div className="w-10 h-10 border-4 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin" />
+        <p className="text-gray-400 text-xs">Loading dashboard data...</p>
+      </div>
+    );
+  }
+
+  const isNewUser = !user.readinessScore && user.streak === 0 && user.currentDay === 1;
+
   const stats = [
-    { label: "Readiness Score", value: user.readinessScore.toFixed(1), sub: "Current Status", icon: Target, color: "text-brand-cyan" },
-    { label: "Daily Streak", value: `${user.streak} Days`, sub: "Keep it up!", icon: Zap, color: "text-brand-orange" },
-    { label: "Hours Logged", value: "43.5h", sub: "Estimated", icon: Clock, color: "text-brand-purple" },
-    { label: "Roadmap Progress", value: `Day ${user.currentDay}`, sub: "On Track", icon: Award, color: "text-brand-teal" },
+    { 
+      label: "Readiness Score", 
+      value: isNewUser ? "Yet to start" : `${user.readinessScore.toFixed(1)}/10`, 
+      sub: isNewUser ? "No assessment yet" : "Current Status", 
+      icon: Target, 
+      color: "text-brand-cyan" 
+    },
+    { 
+      label: "Daily Streak", 
+      value: isNewUser ? "0 Days" : `${user.streak} Days`, 
+      sub: isNewUser ? "Start prep today" : "Keep it up!", 
+      icon: Zap, 
+      color: "text-brand-orange" 
+    },
+    { 
+      label: "Hours Logged", 
+      value: isNewUser ? "0h" : "43.5h", 
+      sub: isNewUser ? "No session active" : "Estimated", 
+      icon: Clock, 
+      color: "text-brand-purple" 
+    },
+    { 
+      label: "Roadmap Progress", 
+      value: isNewUser ? "Yet to start" : `Day ${user.currentDay}`, 
+      sub: isNewUser ? "Profiling pending" : "On Track", 
+      icon: Award, 
+      color: "text-brand-teal" 
+    },
   ];
 
   return (
@@ -61,13 +96,25 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
           <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">
             Welcome back, <span className="bg-gradient-to-r from-brand-cyan to-brand-blue bg-clip-text text-transparent">{(user.name || 'User').split(' ')[0]}</span>
           </h1>
-          <p className="text-gray-400 text-sm font-medium">You are on Day {user.currentDay} of your roadmap. Keep the momentum!</p>
+          <p className="text-gray-400 text-sm font-medium">
+            {isNewUser 
+              ? "Start your placement preparation journey today!" 
+              : `You are on Day ${user.currentDay} of your roadmap. Keep the momentum!`
+            }
+          </p>
         </div>
         <div className="flex gap-3">
-          <Link href="/roadmap" className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
-            <Play className="w-4 h-4 fill-dark-bg" />
-            Resume Roadmap
-          </Link>
+          {isNewUser ? (
+            <Link href="/profiling" className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
+              <Play className="w-4 h-4 fill-dark-bg" />
+              Start Profiling
+            </Link>
+          ) : (
+            <Link href="/roadmap" className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
+              <Play className="w-4 h-4 fill-dark-bg" />
+              Resume Roadmap
+            </Link>
+          )}
           <Link href="/mock-interview" className="px-5 py-2.5 bg-dark-card border border-dark-border text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-dark-hover transition-all">
             <MessageSquare className="w-4 h-4" />
             Quick Interview
@@ -115,33 +162,62 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
             </Link>
           </div>
           <div className="flex-1 min-h-[250px]">
-            <ReadinessChart />
+            {isNewUser ? (
+              <div className="flex flex-col items-center justify-center h-full text-center p-6 bg-black/10 rounded-2xl border border-white/[0.03]">
+                <p className="text-xs text-gray-500 italic">No progress data available yet. Please complete your profiling and begin roadmap tasks to view chart data.</p>
+              </div>
+            ) : (
+              <ReadinessChart />
+            )}
           </div>
         </div>
 
         {/* Next Task Card */}
         <div className="glass-card p-8 rounded-[32px] border-white/5 bg-gradient-to-br from-brand-cyan/10 to-transparent relative overflow-hidden">
           <div className="absolute -top-4 -right-4 w-24 h-24 bg-brand-cyan/5 blur-3xl"></div>
-          <div className="relative z-10 flex flex-col h-full">
-            <span className="text-[10px] font-bold text-brand-cyan border border-brand-cyan/20 bg-brand-cyan/5 px-2 py-0.5 rounded-full w-fit mb-6">NEXT UP — DAY {user.currentDay}</span>
-            <h3 className="text-2xl font-bold text-white mb-2">DSA Basics</h3>
-            <p className="text-sm text-gray-400 leading-relaxed mb-8 flex-1">
-              Focus on your active roadmap tasks. Complete today&apos;s challenges to maintain your streak.
-            </p>
-            <div className="space-y-4">
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Resource</span>
-                <span className="text-brand-orange font-bold">In-App</span>
+          {isNewUser ? (
+            <div className="relative z-10 flex flex-col h-full">
+              <span className="text-[10px] font-bold text-brand-cyan border border-brand-cyan/20 bg-brand-cyan/5 px-2 py-0.5 rounded-full w-fit mb-6">STEP 1 — ONBOARDING</span>
+              <h3 className="text-2xl font-bold text-white mb-2">Setup Preparation</h3>
+              <p className="text-sm text-gray-400 leading-relaxed mb-8 flex-1">
+                Answer career-related questions to let our ML engine generate your personalized placement roadmap.
+              </p>
+              <div className="space-y-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Resource</span>
+                  <span className="text-brand-orange font-bold">Assessment</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Duration</span>
+                  <span className="text-white font-medium">5 mins</span>
+                </div>
+                <Link href="/profiling" className="w-full py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
+                  Start Profiling
+                </Link>
               </div>
-              <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Duration</span>
-                <span className="text-white font-medium">90 mins</span>
-              </div>
-              <Link href="/roadmap" className="w-full py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
-                View Roadmap
-              </Link>
             </div>
-          </div>
+          ) : (
+            <div className="relative z-10 flex flex-col h-full">
+              <span className="text-[10px] font-bold text-brand-cyan border border-brand-cyan/20 bg-brand-cyan/5 px-2 py-0.5 rounded-full w-fit mb-6">NEXT UP — DAY {user.currentDay}</span>
+              <h3 className="text-2xl font-bold text-white mb-2">DSA Basics</h3>
+              <p className="text-sm text-gray-400 leading-relaxed mb-8 flex-1">
+                Focus on your active roadmap tasks. Complete today&apos;s challenges to maintain your streak.
+              </p>
+              <div className="space-y-4">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Resource</span>
+                  <span className="text-brand-orange font-bold">In-App</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-500">Duration</span>
+                  <span className="text-white font-medium">90 mins</span>
+                </div>
+                <Link href="/roadmap" className="w-full py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
+                  View Roadmap
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

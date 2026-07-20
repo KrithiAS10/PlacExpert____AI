@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
 
 export async function GET() {
   try {
-    const userEmail = "krithi@example.com";
+    const cookieStore = await cookies();
+    const userEmail = cookieStore.get('user_email')?.value;
+    
+    if (!userEmail) {
+      return NextResponse.json({ user: null, roadmap: null });
+    }
     const user = await prisma.user.findUnique({
       where: { email: userEmail },
       include: {
