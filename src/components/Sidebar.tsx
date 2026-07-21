@@ -139,12 +139,26 @@ export function Sidebar({ user }: SidebarProps) {
 
       <div className="p-4 mt-auto space-y-4">
         <div className="flex flex-col gap-2 px-2">
-          <Link href="/login" className="text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest px-1">
-            Sign In
-          </Link>
-          <Link href="/signup" className="text-xs font-bold text-brand-cyan hover:text-brand-cyan/80 transition-colors uppercase tracking-widest px-1">
-            Create Account
-          </Link>
+          {user ? (
+            <button
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                window.location.reload();
+              }}
+              className="text-left text-xs font-bold text-brand-red hover:text-brand-red/80 transition-colors uppercase tracking-widest px-1 cursor-pointer"
+            >
+              Sign Out
+            </button>
+          ) : (
+            <>
+              <Link href="/login" className="text-xs font-bold text-gray-500 hover:text-white transition-colors uppercase tracking-widest px-1">
+                Sign In
+              </Link>
+              <Link href="/signup" className="text-xs font-bold text-brand-cyan hover:text-brand-cyan/80 transition-colors uppercase tracking-widest px-1">
+                Create Account
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="p-4 rounded-xl bg-gradient-to-br from-brand-purple/20 to-brand-cyan/20 border border-white/5 relative overflow-hidden group">
