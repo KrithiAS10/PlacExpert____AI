@@ -67,7 +67,7 @@ export async function GET() {
         communication: user.communication,
         dailyStudyTime: user.dailyStudyTime,
         preferredLang: user.preferredLang,
-        placementTimeline: user.placementTimeline
+        placementTimeline: user.placementTimeline,
       },
       roadmap: activeRoadmap,
       weakAreas

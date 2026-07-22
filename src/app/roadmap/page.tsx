@@ -71,6 +71,7 @@ interface UserProfile {
   dailyStudyTime: string | null;
   preferredLang: string | null;
   placementTimeline: string | null;
+  analytics?: any[];
 }
 interface WeakArea {
   name: string;
@@ -803,7 +804,7 @@ export default function RoadmapPage() {
               <span className="flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5 text-brand-cyan" />Readiness Curve</span>
               <span>Score: {user.readinessScore.toFixed(1)}</span>
             </div>
-            <ReadinessChart score={user.readinessScore} />
+            <ReadinessChart score={user.readinessScore} analytics={user.analytics} />
           </div>
 
           {/* Focus Subjects */}
