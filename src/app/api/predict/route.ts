@@ -142,12 +142,13 @@ export async function POST(req: Request) {
       }
     });
     
-    // Update user profile and stats
+    // Update user profile and stats (Readiness score starts at 0.0 until tasks are attended)
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        readinessScore: readinessScore,
+        readinessScore: 0.0,
         currentDay: 1,
+        streak: 0,
         readinessLevel: rawReadiness,
         domainInterest: body.domain,
         targetCompany: body.target,
