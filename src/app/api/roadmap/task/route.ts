@@ -32,8 +32,8 @@ export async function POST(req: Request) {
     });
 
     const user = taskWithUser?.phase.roadmap.user;
-
-    if (user && status === "COMPLETED") {
+    
+    if (user) {
       // Find all tasks for this user's roadmap
       const allTasks = await prisma.task.findMany({
         where: {
@@ -48,24 +48,58 @@ export async function POST(req: Request) {
         }
       });
 
-      // Sort tasks by phase order, then day
-      const sortedTasks = allTasks.sort((a, b) => {
-        if (a.phase.order !== b.phase.order) {
-          return a.phase.order - b.phase.order;
-        }
-        return a.day - b.day;
-      });
+      // Recalculate readiness score based on completed tasks
+      const totalTasks = allTasks.length;
+      const completedTasksCount = allTasks.filter(t => t.status === "COMPLETED").length;
 
-      // Find the next pending task in sequence
-      const nextPending = sortedTasks.find(t => t.id !== taskId && t.status !== "COMPLETED");
-      const nextDay = nextPending ? nextPending.day : user.currentDay;
+      const rawReadiness = user.readinessLevel || "Just Starting";
+      let baselineScore = 3.2;
+      if (rawReadiness === "Just Starting") baselineScore = 2.0;
+      else if (rawReadiness === "Learning Basics") baselineScore = 4.2;
+      else if (rawReadiness === "Actively Practicing") baselineScore = 6.5;
+      else if (rawReadiness === "Ready for Interviews") baselineScore = 8.8;
 
-      // Update currentDay and increment streak
-      await prisma.user.update({
-        where: { id: user.id },
+      const completionRate = totalTasks > 0 ? completedTasksCount / totalTasks : 0;
+      const newReadinessScore = baselineScore + completionRate * (10.0 - baselineScore);
+
+      if (status === "COMPLETED") {
+        // Sort tasks by phase order, then day
+        const sortedTasks = allTasks.sort((a, b) => {
+          if (a.phase.order !== b.phase.order) {
+            return a.phase.order - b.phase.order;
+          }
+          return a.day - b.day;
+        });
+
+        // Find the next pending task in sequence
+        const nextPending = sortedTasks.find(t => t.id !== taskId && t.status !== "COMPLETED");
+        const nextDay = nextPending ? nextPending.day : user.currentDay;
+
+        // Update currentDay, increment streak, and update readinessScore
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            currentDay: nextDay,
+            streak: { increment: 1 },
+            readinessScore: newReadinessScore
+          }
+        });
+      } else {
+        // Just update readinessScore
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            readinessScore: newReadinessScore
+          }
+        });
+      }
+      
+      // Save snapshot of readiness score to history
+      await prisma.analytics.create({
         data: {
-          currentDay: nextDay,
-          streak: { increment: 1 }
+          userId: user.id,
+          metric: "Readiness",
+          value: newReadinessScore
         }
       });
     }

@@ -23,9 +23,36 @@ const Cell = dynamic(() => import("recharts").then(m => m.Cell), { ssr: false })
 const PieChart = dynamic(() => import("recharts").then(m => m.PieChart), { ssr: false });
 const Pie = dynamic(() => import("recharts").then(m => m.Pie), { ssr: false });
 
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  day: number;
+  status: string;
+  type: string;
+}
+
+interface Phase {
+  id: string;
+  title: string;
+  description: string | null;
+  order: number;
+  tasks: Task[];
+}
+
+interface Roadmap {
+  id: string;
+  title: string;
+  description: string | null;
+  phases: Phase[];
+}
+
 interface AnalyticsUser {
   name: string | null;
   readinessScore: number;
+  readinessLevel: string | null;
+  streak: number;
+  roadmaps?: Roadmap[];
 }
 
 interface AnalyticsClientProps {
@@ -38,7 +65,70 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
   
   const isNewUser = !user.readinessScore || user.readinessScore === 0;
 
-  // Map DB data to chart formats
+  // Flatten all tasks from roadmaps
+  const allTasks = user.roadmaps?.flatMap(rm => 
+    rm.phases.flatMap(ph => 
+      ph.tasks.map(t => ({ ...t, phaseFocus: ph.description }))
+    )
+  ) || [];
+
+  const completedTasks = allTasks.filter(t => t.status === "COMPLETED");
+
+  // 1. Solved problems: completed tasks of type PROBLEM
+  const solvedProblemsCount = completedTasks.filter(t => t.type === "PROBLEM").length;
+
+  // 2. Study hours: sum of estimated durations of completed tasks
+  const calculatedStudyHours = completedTasks.reduce((total, task) => {
+    if (task.type === "PROBLEM") return total + 0.5; // 30 mins
+    if (task.type === "MOCK") return total + 1.0; // 60 mins
+    return total + 1.5; // TOPIC - 90 mins
+  }, 0);
+
+  // 3. Concept clarity: baseline + topic completion rate
+  const completedTopics = completedTasks.filter(t => t.type === "TOPIC").length;
+  const totalTopics = allTasks.filter(t => t.type === "TOPIC").length;
+  const topicCompletionRate = totalTopics > 0 ? completedTopics / totalTopics : 0;
+  
+  const rawReadiness = user.readinessLevel || "Just Starting";
+  const baselineClarity = rawReadiness === "Just Starting" ? 4.5 
+    : rawReadiness === "Learning Basics" ? 6.0 
+    : rawReadiness === "Actively Practicing" ? 7.5 
+    : rawReadiness === "Ready for Interviews" ? 8.8 
+    : 5.0;
+  const conceptClarity = baselineClarity + topicCompletionRate * (10.0 - baselineClarity);
+
+  // Helper to map DB data to skill proficiency chart
+  const getSkillScore = (skill: string) => {
+    let filtered: typeof allTasks = [];
+    if (skill === 'DSA') {
+      filtered = allTasks.filter(t => 
+        t.phaseFocus === 'dsa' || 
+        /dsa|array|string|list|tree|graph|search|sort|recursion|dp/i.test(t.title)
+      );
+    } else if (skill === 'DBMS') {
+      filtered = allTasks.filter(t => 
+        /dbms|sql|database|query|normalization|index/i.test(t.title)
+      );
+    } else if (skill === 'OS') {
+      filtered = allTasks.filter(t => 
+        /os\b|process|thread|deadlock|memory|scheduling/i.test(t.title)
+      );
+    } else if (skill === 'CN') {
+      filtered = allTasks.filter(t => 
+        /cn\b|network|ip\b|tcp|udp|http|routing|dns/i.test(t.title)
+      );
+    } else if (skill === 'Web Dev') {
+      filtered = allTasks.filter(t => 
+        t.phaseFocus === 'projects' || 
+        /web|dev|html|css|js\b|javascript|react|next|frontend|backend|api/i.test(t.title)
+      );
+    }
+    
+    if (filtered.length === 0) return 0;
+    const completed = filtered.filter(t => t.status === 'COMPLETED').length;
+    return Math.round((completed / filtered.length) * 100);
+  };
+
   const skillData = isNewUser ? [
     { name: 'DSA', score: 0, color: '#a855f7' },
     { name: 'DBMS', score: 0, color: '#3b82f6' },
@@ -46,21 +136,44 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
     { name: 'CN', score: 0, color: '#14b8a6' },
     { name: 'Web Dev', score: 0, color: '#06b6d4' },
   ] : [
-    { name: 'DSA', score: 85, color: '#a855f7' },
-    { name: 'DBMS', score: 65, color: '#3b82f6' },
-    { name: 'OS', score: 45, color: '#f97316' },
-    { name: 'CN', score: 70, color: '#14b8a6' },
-    { name: 'Web Dev', score: 90, color: '#06b6d4' },
+    { name: 'DSA', score: getSkillScore('DSA'), color: '#a855f7' },
+    { name: 'DBMS', score: getSkillScore('DBMS'), color: '#3b82f6' },
+    { name: 'OS', score: getSkillScore('OS'), color: '#f97316' },
+    { name: 'CN', score: getSkillScore('CN'), color: '#14b8a6' },
+    { name: 'Web Dev', score: getSkillScore('Web Dev'), color: '#06b6d4' },
   ];
 
-  const domainDistribution = isNewUser ? [
+  const getDomainCount = (domain: string) => {
+    if (domain === 'Theory') {
+      return allTasks.filter(t => 
+        t.type === 'TOPIC' && 
+        (/dbms|sql|database|os\b|process|thread|memory|cn\b|network|tcp|ip/i.test(t.title) || t.phaseFocus === 'core_cs')
+      ).length;
+    } else if (domain === 'Coding') {
+      return allTasks.filter(t => t.type === 'PROBLEM' || t.phaseFocus === 'dsa').length;
+    } else if (domain === 'System Design') {
+      return allTasks.filter(t => 
+        t.phaseFocus === 'system_design' || 
+        /system design|architecture|scalability/i.test(t.title) ||
+        t.type === 'MOCK'
+      ).length;
+    }
+    return 0;
+  };
+
+  const theoryCount = getDomainCount('Theory');
+  const codingCount = getDomainCount('Coding');
+  const designCount = getDomainCount('System Design');
+  const totalDomainCount = theoryCount + codingCount + designCount;
+
+  const domainDistribution = (isNewUser || totalDomainCount === 0) ? [
     { name: 'Theory', value: 0, color: '#3b82f6' },
     { name: 'Coding', value: 0, color: '#06b6d4' },
     { name: 'System Design', value: 0, color: '#a855f7' },
   ] : [
-    { name: 'Theory', value: 30, color: '#3b82f6' },
-    { name: 'Coding', value: 50, color: '#06b6d4' },
-    { name: 'System Design', value: 20, color: '#a855f7' },
+    { name: 'Theory', value: Math.round((theoryCount / totalDomainCount) * 100), color: '#3b82f6' },
+    { name: 'Coding', value: Math.round((codingCount / totalDomainCount) * 100), color: '#06b6d4' },
+    { name: 'System Design', value: Math.round((designCount / totalDomainCount) * 100), color: '#a855f7' },
   ];
 
   const stats = [
@@ -74,23 +187,27 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
     },
     { 
       label: "Study Hours", 
-      value: isNewUser ? "0h" : "43.5h", 
-      sub: isNewUser ? "No active sessions" : "Avg 6.2h / day", 
+      value: isNewUser ? "0h" : `${calculatedStudyHours.toFixed(1)}h`, 
+      sub: isNewUser || calculatedStudyHours === 0 
+        ? "No active sessions" 
+        : user.streak > 0 
+          ? `Avg ${(calculatedStudyHours / user.streak).toFixed(1)}h / day` 
+          : "Estimated study time", 
       icon: Clock, 
       color: "text-brand-purple", 
       up: true 
     },
     { 
       label: "Solved Problems", 
-      value: isNewUser ? "0" : "128", 
-      sub: isNewUser ? "Start solving to track" : "Top 15% of peers", 
+      value: isNewUser ? "0" : `${solvedProblemsCount}`, 
+      sub: isNewUser || solvedProblemsCount === 0 ? "Start solving to track" : "Top 15% of peers", 
       icon: Award, 
       color: "text-brand-orange", 
       up: true 
     },
     { 
       label: "Concept Clarity", 
-      value: isNewUser ? "Yet to start" : "8.4/10", 
+      value: isNewUser || totalTopics === 0 ? "Yet to start" : `${conceptClarity.toFixed(1)}/10`, 
       sub: isNewUser ? "No assessment data" : "AI Assessment", 
       icon: Activity, 
       color: "text-brand-teal", 
