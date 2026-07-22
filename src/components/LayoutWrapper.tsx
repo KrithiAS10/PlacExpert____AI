@@ -49,7 +49,10 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         if (data.user) {
-          setUser(data.user);
+          setUser({
+            ...data.user,
+            weakAreas: data.weakAreas || [],
+          });
         } else {
           setUser(null);
         }

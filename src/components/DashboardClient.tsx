@@ -2,17 +2,16 @@
 
 import { motion } from "framer-motion";
 import { 
-  BarChart3, 
   Zap, 
   Target, 
   TrendingUp, 
   Clock, 
   Play,
   ArrowRight,
-  Plus,
   Award,
   BookOpen,
-  MessageSquare
+  MessageSquare,
+  PlayCircle
 } from "lucide-react";
 import Link from "next/link";
 import { ReadinessChart } from "@/app/roadmap/components/ReadinessChart";
@@ -24,12 +23,39 @@ interface Activity {
   status?: string | null;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  description: string | null;
+  day: number;
+  status: string;
+  type: string;
+}
+
+interface Phase {
+  id: string;
+  title: string;
+  description: string | null;
+  order: number;
+  tasks: Task[];
+}
+
+interface Roadmap {
+  id: string;
+  title: string;
+  description: string | null;
+  phases: Phase[];
+}
+
 interface User {
   name: string | null;
   readinessScore: number;
   streak: number;
   currentDay: number;
+  domainInterest?: string | null;
   activities: Activity[];
+  roadmaps?: Roadmap[];
+  analytics?: any[];
 }
 
 interface Recommendation {
@@ -57,6 +83,22 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
 
   const isNewUser = !user.readinessScore && user.streak === 0 && user.currentDay === 1;
 
+  // Flatten all tasks from roadmaps
+  const allTasks = user.roadmaps?.flatMap(rm => 
+    rm.phases.flatMap(ph => 
+      ph.tasks
+    )
+  ) || [];
+
+  const completedTasks = allTasks.filter(t => t.status === "COMPLETED");
+
+  // Calculate study hours dynamically
+  const calculatedStudyHours = completedTasks.reduce((total, task) => {
+    if (task.type === "PROBLEM") return total + 0.5; // 30 mins
+    if (task.type === "MOCK") return total + 1.0; // 60 mins
+    return total + 1.5; // TOPIC - 90 mins
+  }, 0);
+
   const stats = [
     { 
       label: "Readiness Score", 
@@ -74,7 +116,7 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
     },
     { 
       label: "Hours Logged", 
-      value: isNewUser ? "0h" : "43.5h", 
+      value: isNewUser ? "0h" : `${calculatedStudyHours.toFixed(1)}h`, 
       sub: isNewUser ? "No session active" : "Estimated", 
       icon: Clock, 
       color: "text-brand-purple" 
@@ -167,7 +209,7 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
                 <p className="text-xs text-gray-500 italic">No progress data available yet. Please complete your profiling and begin roadmap tasks to view chart data.</p>
               </div>
             ) : (
-              <ReadinessChart />
+              <ReadinessChart score={user.readinessScore} analytics={user.analytics} />
             )}
           </div>
         </div>
@@ -221,57 +263,42 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
         </div>
       </div>
 
-      {/* Bottom Grid: Recent Feed & Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recommended Resources */}
-        <div className="space-y-6">
+      {/* AI Video Recommendations — domain-specific YouTube links */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-brand-purple" />
-            AI Recommendations
+            <PlayCircle className="w-5 h-5 text-[#FF0000]" />
+            AI Video Recommendations
           </h3>
-          <div className="space-y-3">
-            {recommendations.map((item) => (
-              <Link href={item.url} key={item.id} className="bg-dark-card border border-dark-border p-4 rounded-2xl flex items-center gap-4 hover:border-white/10 transition-all cursor-pointer group">
-                <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                  <Plus className="w-5 h-5 text-brand-cyan" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-white group-hover:text-brand-cyan transition-colors">{item.title}</h4>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest">{item.type} • {item.duration || 'N/A'}</p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-800 group-hover:text-gray-500 transition-colors" />
-              </Link>
-            ))}
-          </div>
+          {user.domainInterest && (
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan uppercase tracking-wider">
+              {user.domainInterest} Track
+            </span>
+          )}
         </div>
-
-        {/* Activity Feed */}
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-brand-teal" />
-            Recent Activity
-          </h3>
-          <div className="glass-card p-6 rounded-3xl border-white/5 space-y-6">
-            {user.activities.length > 0 ? user.activities.map((act) => (
-              <div key={act.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-brand-cyan shadow-glow-cyan"></div>
-                  <div>
-                    <p className="text-sm text-gray-300 font-medium">{act.action}</p>
-                    <p className="text-[10px] text-gray-500 uppercase">{new Date(act.timestamp).toLocaleDateString()}</p>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {recommendations.map((item) => (
+            <a
+              href={item.url}
+              key={item.id}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card p-5 rounded-3xl border-white/5 flex flex-col justify-between hover:border-[#FF0000]/30 hover:bg-[#FF0000]/[0.03] transition-all cursor-pointer group space-y-4"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-[#FF0000]/10 border border-[#FF0000]/20 flex items-center justify-center shrink-0 group-hover:bg-[#FF0000]/20 transition-colors">
+                  <PlayCircle className="w-5 h-5 text-[#FF0000]" />
                 </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-brand-cyan">
-                  {act.status || 'LOGGED'}
-                </span>
+                <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-[#FF0000] transition-colors" />
               </div>
-            )) : (
-              <p className="text-xs text-gray-500 text-center py-8 italic">No recent activity found in database.</p>
-            )}
-            <Link href="/analytics" className="block w-full py-3 text-center text-xs text-gray-500 font-bold uppercase tracking-widest border border-dark-border rounded-xl hover:text-white hover:border-white/10 transition-all">
-              View Full History
-            </Link>
-          </div>
+              <div>
+                <h4 className="text-sm font-bold text-white group-hover:text-[#FF0000] transition-colors line-clamp-2">{item.title}</h4>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">
+                  YouTube • {item.duration || 'N/A'}
+                </p>
+              </div>
+            </a>
+          ))}
         </div>
       </div>
     </div>

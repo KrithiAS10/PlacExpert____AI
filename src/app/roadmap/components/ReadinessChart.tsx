@@ -9,13 +9,55 @@ const Line = dynamic(() => import("recharts").then(m => m.Line), { ssr: false })
 const CartesianGrid = dynamic(() => import("recharts").then(m => m.CartesianGrid), { ssr: false });
 const Tooltip = dynamic(() => import("recharts").then(m => m.Tooltip), { ssr: false });
 
-export function ReadinessChart({ score = 3.2 }: { score?: number }) {
-  const chartData = [
-    { day: "Day 1", actual: score, projected: score },
-    { day: "Day 14", actual: score + 1.2 > 10 ? 10 : score + 1.2, projected: score + 1.5 },
-    { day: "Day 30", projected: score + 2.8 > 10 ? 10 : score + 2.8 },
-    { day: "Day 45", projected: score + 4.0 > 10 ? 10 : score + 4.0 },
-  ];
+interface AnalyticsDataPoint {
+  id?: string;
+  userId?: string;
+  date: Date | string;
+  metric: string;
+  value: number;
+}
+
+interface ReadinessChartProps {
+  score?: number;
+  analytics?: AnalyticsDataPoint[];
+}
+
+export function ReadinessChart({ score = 3.2, analytics = [] }: ReadinessChartProps) {
+  // Filter for "Readiness" metrics and sort by date ascending
+  const readinessPoints = analytics
+    .filter(pt => pt.metric === "Readiness")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  let chartData: { day: string; actual?: number; projected: number }[] = [];
+
+  if (readinessPoints.length <= 1) {
+    const startScore = readinessPoints[0]?.value ?? score;
+    chartData = [
+      { day: "Day 1", actual: startScore, projected: startScore },
+      { day: "Day 15", projected: Math.min(10, startScore + 1.5) },
+      { day: "Day 30", projected: Math.min(10, startScore + 3.0) },
+      { day: "Day 45", projected: Math.min(10, startScore + 4.5) },
+    ];
+  } else {
+    const startScore = readinessPoints[0].value;
+    const totalPoints = readinessPoints.length;
+
+    chartData = readinessPoints.map((pt, index) => {
+      // Calculate a projected score that linearly scales up to 10
+      const progressRatio = index / Math.max(1, totalPoints - 1);
+      const projectedValue = startScore + progressRatio * (10.0 - startScore);
+
+      // Clean date representation for X-axis
+      const dateObj = new Date(pt.date);
+      const formattedDate = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+      return {
+        day: formattedDate,
+        actual: Number(pt.value.toFixed(1)),
+        projected: Number(projectedValue.toFixed(1)),
+      };
+    });
+  }
 
   return (
     <div className="h-[120px] w-full min-h-[120px]">
