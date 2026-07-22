@@ -35,20 +35,45 @@ export async function GET() {
 
     const activeRoadmap = user.roadmaps[0] || null;
 
-    // Dynamically compile weak areas based on coreCsStrength and other answers
-    const weakAreas: { name: string; reason: string; severity: string }[] = [];
+    // Dynamically compile weak areas based on multi-dimensional profiling answers
+    const candidateWeakAreas: { name: string; reason: string; severity: string; priority: number }[] = [];
+
+    // Aptitude check
+    if (user.aptitude === "Poor") {
+      candidateWeakAreas.push({ name: "Aptitude & Logic", reason: "Low rating in aptitude profiling", severity: "HIGH", priority: 1 });
+    } else if (user.aptitude === "Average") {
+      candidateWeakAreas.push({ name: "Aptitude & Logic", reason: "Average aptitude score", severity: "MED", priority: 3 });
+    }
+
+    // Communication check
+    if (user.communication === "Very Nervous" || user.communication === "Nervous") {
+      candidateWeakAreas.push({ name: "Interview Communication", reason: "Nervous in mock/hr interviews", severity: "HIGH", priority: 2 });
+    } else if (user.communication === "Need Practice") {
+      candidateWeakAreas.push({ name: "Interview Communication", reason: "Requires verbal interview practice", severity: "MED", priority: 4 });
+    }
+
+    // Hands-on projects / platform check
+    if (user.projects === "Zero" || user.codingPlatform === "Never tried") {
+      candidateWeakAreas.push({ name: "Hands-on Projects & Code", reason: "Zero project build experience", severity: "HIGH", priority: 2 });
+    }
+
+    // Core CS Subjects check based on user's coreCsStrength
     if (user.coreCsStrength !== "DSA") {
-      weakAreas.push({ name: "DSA & Algorithmic Thinking", reason: "Not selected as core strength", severity: "HIGH" });
+      candidateWeakAreas.push({ name: "DSA & Problem Solving", reason: "Not selected as core CS strength", severity: "HIGH", priority: 1 });
     }
     if (user.coreCsStrength !== "DBMS") {
-      weakAreas.push({ name: "SQL & Relational Databases", reason: "Needs additional practice", severity: "HIGH" });
+      candidateWeakAreas.push({ name: "SQL & Databases", reason: "Needs additional practice in DBMS", severity: "MED", priority: 3 });
     }
     if (user.coreCsStrength !== "OS") {
-      weakAreas.push({ name: "OS Scheduling & Memory", reason: "Average performance in assessments", severity: "MED" });
+      candidateWeakAreas.push({ name: "OS & Memory", reason: "Theoretical gap in Operating Systems", severity: "MED", priority: 4 });
     }
     if (user.coreCsStrength !== "Networking") {
-      weakAreas.push({ name: "Computer Networking", reason: "Basic knowledge level", severity: "MED" });
+      candidateWeakAreas.push({ name: "Computer Networks", reason: "Basic knowledge level in CN", severity: "LOW", priority: 5 });
     }
+
+    // Sort by priority (lowest number = highest priority) and pick top 3
+    candidateWeakAreas.sort((a, b) => a.priority - b.priority);
+    const weakAreas = candidateWeakAreas.slice(0, 3).map(({ name, reason, severity }) => ({ name, reason, severity }));
 
     return NextResponse.json({
       user: {
