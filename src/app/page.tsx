@@ -59,9 +59,10 @@ export default async function DashboardPage() {
   const userEmail = cookieStore.get("user_email")?.value;
   const user = userEmail ? await getUserData(userEmail) : null;
 
-  // Pick videos based on the user's domain from profiling — same logic as roadmap generation
-  const recommendations =
-    DOMAIN_VIDEOS[user?.domainInterest ?? ""] ?? DEFAULT_VIDEOS;
+  // Pick videos ONLY if the user has completed profiling and set domainInterest
+  const recommendations = user?.domainInterest
+    ? (DOMAIN_VIDEOS[user.domainInterest] ?? DOMAIN_VIDEOS["Not Decided"])
+    : [];
 
   return <DashboardClient user={user} recommendations={recommendations} />;
 }

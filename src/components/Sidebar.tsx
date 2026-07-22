@@ -29,6 +29,7 @@ interface SidebarUser {
   currentDay?: number;
   readinessLevel?: string | null;
   coreCsStrength?: string | null;
+  domainInterest?: string | null;
   placementTimeline?: string | null;
   aptitude?: string | null;
   communication?: string | null;
@@ -58,7 +59,9 @@ export function Sidebar({ user }: SidebarProps) {
 
   // Dynamic weak areas mapped from profiling answers and AI evaluation
   const getWeakAreas = () => {
-    if (!user || (!user.coreCsStrength && !user.readinessLevel && (!user.weakAreas || user.weakAreas.length === 0))) {
+    const hasCompletedProfiling = Boolean(user && user.domainInterest);
+
+    if (!user || !hasCompletedProfiling) {
       return {
         isAnalyzed: false,
         items: []
@@ -67,7 +70,7 @@ export function Sidebar({ user }: SidebarProps) {
 
     const items: { name: string; label: string; color: string }[] = [];
 
-    // 1. If backend API passed weakAreas evaluated from profiling / ML engine
+    // Only use weakAreas evaluated by the backend AI from profiling answers
     if (user.weakAreas && user.weakAreas.length > 0) {
       user.weakAreas.forEach((wa) => {
         let color = "text-orange-400";
@@ -86,30 +89,10 @@ export function Sidebar({ user }: SidebarProps) {
 
         items.push({ name: wa.name, label, color });
       });
-    } else {
-      // 2. Dynamic analysis fallback from user's profiling responses
-      if (user.coreCsStrength !== "DSA") {
-        items.push({ name: "DSA & Algorithmic Thinking", label: "Core Gap", color: "text-red-400" });
-      }
-      if (user.coreCsStrength !== "DBMS") {
-        items.push({ name: "SQL & Databases", label: "Practice Needed", color: "text-orange-400" });
-      }
-      if (user.coreCsStrength !== "OS") {
-        items.push({ name: "OS Scheduling", label: "Theoretical Gap", color: "text-yellow-400" });
-      }
-      if (user.coreCsStrength !== "Networking") {
-        items.push({ name: "Computer Networking", label: "Basic Level", color: "text-blue-400" });
-      }
-      if (user.aptitude && ["Needs Improvement", "Average", "Basic"].includes(user.aptitude)) {
-        items.push({ name: "Aptitude & Logic", label: "Assessment Gap", color: "text-purple-400" });
-      }
-      if (user.communication && ["Basic", "Needs Improvement"].includes(user.communication)) {
-        items.push({ name: "Communication", label: "Soft Skill Gap", color: "text-pink-400" });
-      }
     }
 
     return {
-      isAnalyzed: true,
+      isAnalyzed: items.length > 0,
       items: items.slice(0, 3)
     };
   };

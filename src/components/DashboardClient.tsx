@@ -99,25 +99,27 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
     return total + 1.5; // TOPIC - 90 mins
   }, 0);
 
+  const hasAttendedTasks = completedTasks.length > 0;
+
   const stats = [
     { 
       label: "Readiness Score", 
-      value: isNewUser ? "Yet to start" : `${user.readinessScore.toFixed(1)}/10`, 
-      sub: isNewUser ? "No assessment yet" : "Current Status", 
+      value: !hasAttendedTasks || !user.readinessScore || user.readinessScore === 0 ? "Yet to start" : `${user.readinessScore.toFixed(1)}/10`, 
+      sub: !hasAttendedTasks || !user.readinessScore || user.readinessScore === 0 ? "Attend tasks to calculate" : "Based on task performance", 
       icon: Target, 
       color: "text-brand-cyan" 
     },
     { 
       label: "Daily Streak", 
-      value: isNewUser ? "0 Days" : `${user.streak} Days`, 
-      sub: isNewUser ? "Start prep today" : "Keep it up!", 
+      value: !hasAttendedTasks && user.streak === 0 ? "0 Days" : `${user.streak} Days`, 
+      sub: !hasAttendedTasks ? "Start prep today" : "Active Streak", 
       icon: Zap, 
       color: "text-brand-orange" 
     },
     { 
       label: "Hours Logged", 
-      value: isNewUser ? "0h" : `${calculatedStudyHours.toFixed(1)}h`, 
-      sub: isNewUser ? "No session active" : "Estimated", 
+      value: !hasAttendedTasks ? "0h" : `${calculatedStudyHours.toFixed(1)}h`, 
+      sub: !hasAttendedTasks ? "No session active" : "Estimated", 
       icon: Clock, 
       color: "text-brand-purple" 
     },
@@ -276,30 +278,52 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
             </span>
           )}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {recommendations.map((item) => (
-            <a
-              href={item.url}
-              key={item.id}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="glass-card p-5 rounded-3xl border-white/5 flex flex-col justify-between hover:border-[#FF0000]/30 hover:bg-[#FF0000]/[0.03] transition-all cursor-pointer group space-y-4"
+
+        {!user.domainInterest || recommendations.length === 0 ? (
+          <div className="glass-card p-8 rounded-3xl border-white/5 flex flex-col items-center text-center space-y-4">
+            <div className="w-12 h-12 rounded-2xl bg-[#FF0000]/10 border border-[#FF0000]/20 flex items-center justify-center text-[#FF0000]">
+              <PlayCircle className="w-6 h-6" />
+            </div>
+            <div className="space-y-1 max-w-md">
+              <h4 className="text-lg font-bold text-white">Recommendations Locked</h4>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                Complete your profiling evaluation to discover tailored YouTube video recommendations for your target tech domain.
+              </p>
+            </div>
+            <Link
+              href="/profiling"
+              className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-xs font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan"
             >
-              <div className="flex items-start justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-[#FF0000]/10 border border-[#FF0000]/20 flex items-center justify-center shrink-0 group-hover:bg-[#FF0000]/20 transition-colors">
-                  <PlayCircle className="w-5 h-5 text-[#FF0000]" />
+              <Play className="w-3.5 h-3.5 fill-dark-bg" />
+              Start Profiling
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {recommendations.map((item) => (
+              <a
+                href={item.url}
+                key={item.id}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass-card p-5 rounded-3xl border-white/5 flex flex-col justify-between hover:border-[#FF0000]/30 hover:bg-[#FF0000]/[0.03] transition-all cursor-pointer group space-y-4"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-[#FF0000]/10 border border-[#FF0000]/20 flex items-center justify-center shrink-0 group-hover:bg-[#FF0000]/20 transition-colors">
+                    <PlayCircle className="w-5 h-5 text-[#FF0000]" />
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-[#FF0000] transition-colors" />
                 </div>
-                <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-[#FF0000] transition-colors" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white group-hover:text-[#FF0000] transition-colors line-clamp-2">{item.title}</h4>
-                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">
-                  YouTube • {item.duration || 'N/A'}
-                </p>
-              </div>
-            </a>
-          ))}
-        </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white group-hover:text-[#FF0000] transition-colors line-clamp-2">{item.title}</h4>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">
+                    YouTube • {item.duration || 'N/A'}
+                  </p>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
