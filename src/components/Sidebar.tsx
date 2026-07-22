@@ -240,9 +240,9 @@ export function Sidebar({ user }: SidebarProps) {
           <div className="absolute top-0 right-0 -mr-4 -mt-4 w-16 h-16 bg-brand-cyan/20 blur-2xl group-hover:bg-brand-cyan/30 transition-all"></div>
           <p className="text-xs font-bold text-brand-cyan mb-1">PRO PLAN</p>
           <p className="text-xs text-gray-400 mb-3">Unlock AI Mock Interviews & Advanced Roadmap</p>
-          <button className="w-full py-2 bg-white text-dark-bg text-xs font-bold rounded-lg hover:bg-gray-200 transition-colors">
+          <Link href="/voice-interview" className="block w-full py-2 bg-white text-dark-bg text-xs font-bold rounded-lg hover:bg-gray-200 transition-colors text-center">
             Upgrade Now
-          </button>
+          </Link>
         </div>
       </div>
     </aside>
