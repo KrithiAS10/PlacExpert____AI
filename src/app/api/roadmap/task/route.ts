@@ -48,51 +48,51 @@ export async function POST(req: Request) {
         }
       });
 
-      // Recalculate readiness score based on completed tasks
-      const totalTasks = allTasks.length;
-      const completedTasksCount = allTasks.filter(t => t.status === "COMPLETED").length;
+      // Recalculate streak and readiness score based on actual task performance
+      const totalTasksCount = allTasks.length;
+      const completedTasks = allTasks.filter(t => t.status === "COMPLETED");
+      const completedTasksCount = completedTasks.length;
 
+      // Dynamic streak: count of distinct days where at least 1 task has been completed
+      const uniqueCompletedDays = new Set(completedTasks.map(t => t.day)).size;
+      const streakCount = uniqueCompletedDays;
+
+      // Base readiness score from profiling level
       const rawReadiness = user.readinessLevel || "Just Starting";
-      let baselineScore = 3.2;
-      if (rawReadiness === "Just Starting") baselineScore = 2.0;
-      else if (rawReadiness === "Learning Basics") baselineScore = 4.2;
-      else if (rawReadiness === "Actively Practicing") baselineScore = 6.5;
-      else if (rawReadiness === "Ready for Interviews") baselineScore = 8.8;
+      let baselineScore = 2.0;
+      if (rawReadiness === "Learning Basics") baselineScore = 4.0;
+      else if (rawReadiness === "Actively Practicing") baselineScore = 6.0;
+      else if (rawReadiness === "Ready for Interviews") baselineScore = 8.0;
 
-      const completionRate = totalTasks > 0 ? completedTasksCount / totalTasks : 0;
-      const newReadinessScore = baselineScore + completionRate * (10.0 - baselineScore);
+      // Dynamic performance boost: ratio of completed tasks scaled to 10.0 max score
+      const progressBoost = totalTasksCount > 0 
+        ? (completedTasksCount / totalTasksCount) * (10.0 - baselineScore) 
+        : 0;
 
-      if (status === "COMPLETED") {
-        // Sort tasks by phase order, then day
-        const sortedTasks = allTasks.sort((a, b) => {
-          if (a.phase.order !== b.phase.order) {
-            return a.phase.order - b.phase.order;
-          }
-          return a.day - b.day;
-        });
+      const newReadinessScore = completedTasksCount === 0 
+        ? baselineScore 
+        : Math.min(10.0, Number((baselineScore + progressBoost).toFixed(1)));
 
-        // Find the next pending task in sequence
-        const nextPending = sortedTasks.find(t => t.id !== taskId && t.status !== "COMPLETED");
-        const nextDay = nextPending ? nextPending.day : user.currentDay;
+      // Sort tasks to calculate current active day pointer
+      const sortedTasks = allTasks.sort((a, b) => {
+        if (a.phase.order !== b.phase.order) {
+          return a.phase.order - b.phase.order;
+        }
+        return a.day - b.day;
+      });
 
-        // Update currentDay, increment streak, and update readinessScore
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            currentDay: nextDay,
-            streak: { increment: 1 },
-            readinessScore: newReadinessScore
-          }
-        });
-      } else {
-        // Just update readinessScore
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            readinessScore: newReadinessScore
-          }
-        });
-      }
+      const nextPending = sortedTasks.find(t => t.status !== "COMPLETED");
+      const nextDay = nextPending ? nextPending.day : user.currentDay;
+
+      // Persist updated metrics
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          currentDay: nextDay,
+          streak: streakCount,
+          readinessScore: newReadinessScore
+        }
+      });
       
       // Save snapshot of readiness score to history
       await prisma.analytics.create({

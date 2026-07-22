@@ -2,7 +2,6 @@
 
 import { motion } from "framer-motion";
 import { 
-  BarChart3, 
   Zap, 
   Target, 
   TrendingUp, 
@@ -53,6 +52,7 @@ interface User {
   readinessScore: number;
   streak: number;
   currentDay: number;
+  domainInterest?: string | null;
   activities: Activity[];
   roadmaps?: Roadmap[];
   analytics?: any[];
@@ -263,73 +263,42 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
         </div>
       </div>
 
-      {/* Bottom Grid: Recent Feed & Recommendations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* AI Video Recommendations — domain-specific YouTube links */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <PlayCircle className="w-5 h-5 text-[#FF0000]" />
-              AI Recommendations
-            </h3>
-            {user.domainInterest && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan uppercase tracking-wider">
-                {user.domainInterest}
-              </span>
-            )}
-          </div>
-          <div className="space-y-3">
-            {recommendations.map((item) => (
-              <a
-                href={item.url}
-                key={item.id}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-dark-card border border-dark-border p-4 rounded-2xl flex items-center gap-4 hover:border-[#FF0000]/30 hover:bg-[#FF0000]/[0.03] transition-all cursor-pointer group"
-              >
-                {/* Red YouTube play icon */}
-                <div className="w-12 h-12 rounded-xl bg-[#FF0000]/10 border border-[#FF0000]/20 flex items-center justify-center shrink-0 group-hover:bg-[#FF0000]/20 transition-colors">
+      {/* AI Video Recommendations — domain-specific YouTube links */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <PlayCircle className="w-5 h-5 text-[#FF0000]" />
+            AI Video Recommendations
+          </h3>
+          {user.domainInterest && (
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan uppercase tracking-wider">
+              {user.domainInterest} Track
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {recommendations.map((item) => (
+            <a
+              href={item.url}
+              key={item.id}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card p-5 rounded-3xl border-white/5 flex flex-col justify-between hover:border-[#FF0000]/30 hover:bg-[#FF0000]/[0.03] transition-all cursor-pointer group space-y-4"
+            >
+              <div className="flex items-start justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-[#FF0000]/10 border border-[#FF0000]/20 flex items-center justify-center shrink-0 group-hover:bg-[#FF0000]/20 transition-colors">
                   <PlayCircle className="w-5 h-5 text-[#FF0000]" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-white group-hover:text-[#FF0000] transition-colors truncate">{item.title}</h4>
-                  <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">
-                    YouTube Video • {item.duration || 'N/A'}
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-gray-700 group-hover:text-[#FF0000] transition-colors shrink-0" />
-              </a>
-            ))}
-          </div>
-        </div>
-
-        {/* Activity Feed */}
-        <div className="space-y-6">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-brand-teal" />
-            Recent Activity
-          </h3>
-          <div className="glass-card p-6 rounded-3xl border-white/5 space-y-6">
-            {user.activities.length > 0 ? user.activities.map((act) => (
-              <div key={act.id} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-brand-cyan shadow-glow-cyan"></div>
-                  <div>
-                    <p className="text-sm text-gray-300 font-medium">{act.action}</p>
-                    <p className="text-[10px] text-gray-500 uppercase">{new Date(act.timestamp).toLocaleDateString()}</p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/5 border border-white/5 text-brand-cyan">
-                  {act.status || 'LOGGED'}
-                </span>
+                <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-[#FF0000] transition-colors" />
               </div>
-            )) : (
-              <p className="text-xs text-gray-500 text-center py-8 italic">No recent activity found in database.</p>
-            )}
-            <Link href="/analytics" className="block w-full py-3 text-center text-xs text-gray-500 font-bold uppercase tracking-widest border border-dark-border rounded-xl hover:text-white hover:border-white/10 transition-all">
-              View Full History
-            </Link>
-          </div>
+              <div>
+                <h4 className="text-sm font-bold text-white group-hover:text-[#FF0000] transition-colors line-clamp-2">{item.title}</h4>
+                <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-2">
+                  YouTube • {item.duration || 'N/A'}
+                </p>
+              </div>
+            </a>
+          ))}
         </div>
       </div>
     </div>

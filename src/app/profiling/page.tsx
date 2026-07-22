@@ -351,20 +351,20 @@ export default function ProfilingPage() {
 
           {/* CTA Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Link
-              href="/roadmap"
-              className="flex items-center justify-center gap-2 py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl hover:bg-brand-cyan/90 active:scale-95 transition-all shadow-glow-cyan group"
+            <button
+              onClick={() => { window.location.href = "/roadmap"; }}
+              className="flex items-center justify-center gap-2 py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl hover:bg-brand-cyan/90 active:scale-95 transition-all shadow-glow-cyan group cursor-pointer"
             >
               <Map className="w-5 h-5 group-hover:rotate-12 transition-transform" />
               View My Roadmap
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              href="/"
-              className="flex items-center justify-center gap-2 py-4 bg-white/5 text-white font-bold rounded-2xl border border-white/10 hover:bg-white/10 active:scale-95 transition-all"
+            </button>
+            <button
+              onClick={() => { window.location.href = "/"; }}
+              className="flex items-center justify-center gap-2 py-4 bg-white/5 text-white font-bold rounded-2xl border border-white/10 hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
             >
               Return to Dashboard
-            </Link>
+            </button>
           </div>
         </motion.div>
       </div>
