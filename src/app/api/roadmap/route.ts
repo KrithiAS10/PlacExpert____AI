@@ -107,6 +107,7 @@ export async function GET() {
       user: {
         name: user.name,
         email: user.email,
+        phone: user.phone,
         readinessScore: user.readinessScore,
         currentDay: currentDay,
         streak: user.streak,

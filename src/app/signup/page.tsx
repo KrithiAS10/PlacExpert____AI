@@ -1,10 +1,112 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Lock, User, ArrowRight, UserPlus, Globe, Zap, ShieldCheck } from "lucide-react";
+import { Mail, Lock, User, ArrowRight, UserPlus, Globe, Zap, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 export default function SignupPage() {
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSignupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (!termsAccepted) {
+      setErrorMsg("You must agree to the Terms of Service and Privacy Policy");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, username, email, phone: "", password }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to register user");
+      }
+
+      setSuccessMsg("Registered successfully!");
+      setName("");
+      setUsername("");
+      setEmail("");
+      setPassword("");
+
+      router.push("/profiling");
+      router.refresh();
+    } catch (err: any) {
+      setErrorMsg(err.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setErrorMsg("");
+    
+    // Simulate network delay
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    try {
+      // First try to login Google Mock User
+      let res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: "google_user@gmail.com", password: "google_mock_password" })
+      });
+
+      if (!res.ok) {
+        // If user not found, register Google Mock User
+        res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Google User",
+            username: "google_user",
+            email: "google_user@gmail.com",
+            phone: "",
+            password: "google_mock_password"
+          })
+        });
+      }
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Google Sign-in failed");
+      }
+
+      setSuccessMsg("Signed in with Google!");
+      
+      if (!data.user?.domainInterest) {
+        router.push("/profiling");
+      } else {
+        router.push("/");
+      }
+      router.refresh();
+    } catch (err: any) {
+      setErrorMsg(err.message || "Google Sign-in simulation failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-dark-bg flex items-center justify-center p-6 relative overflow-hidden">
       {/* Background Decorative Elements */}
@@ -33,7 +135,18 @@ export default function SignupPage() {
             <p className="text-gray-400 text-sm font-medium">Join 5,000+ students on their journey to top tech roles</p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          {errorMsg && (
+            <div className="p-3 mb-5 rounded-xl bg-brand-red/10 border border-brand-red/20 text-brand-red text-xs font-semibold">
+              {errorMsg}
+            </div>
+          )}
+          {successMsg && (
+            <div className="p-3 mb-5 rounded-xl bg-brand-green/10 border border-brand-green/20 text-brand-green text-xs font-semibold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" /> {successMsg}
+            </div>
+          )}
+
+          <form className="space-y-6" onSubmit={handleSignupSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Full Name</label>
@@ -41,49 +154,81 @@ export default function SignupPage() {
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-brand-cyan transition-colors" />
                   <input 
                     type="text" 
+                    required
                     placeholder="John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
                     className="w-full bg-dark-bg border border-dark-border rounded-xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-cyan/50 transition-all"
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Username</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-brand-cyan transition-colors" />
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="johndoe"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-dark-bg border border-dark-border rounded-xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-cyan/50 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Email Address</label>
                 <div className="relative group">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-brand-cyan transition-colors" />
                   <input 
                     type="email" 
+                    required
                     placeholder="john@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full bg-dark-bg border border-dark-border rounded-xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-cyan/50 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-brand-cyan transition-colors" />
+                  <input 
+                    type="password" 
+                    required
+                    placeholder="At least 8 characters"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-dark-bg border border-dark-border rounded-xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-cyan/50 transition-all"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-brand-cyan transition-colors" />
-                <input 
-                  type="password" 
-                  placeholder="At least 8 characters"
-                  className="w-full bg-dark-bg border border-dark-border rounded-xl py-3 pl-12 pr-4 text-sm text-white focus:outline-none focus:border-brand-cyan/50 transition-all"
-                />
-              </div>
-            </div>
-
             <div className="flex items-center gap-3 px-1">
-              <input type="checkbox" id="terms" className="accent-brand-cyan w-4 h-4 rounded bg-dark-bg border-dark-border" />
-              <label htmlFor="terms" className="text-xs text-gray-500 font-medium">
+              <input 
+                type="checkbox" 
+                id="terms" 
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="accent-brand-cyan w-4 h-4 rounded bg-dark-bg border-dark-border" 
+              />
+              <label htmlFor="terms" className="text-xs text-gray-500 font-medium cursor-pointer">
                 I agree to the <Link href="#" className="text-brand-cyan hover:underline">Terms of Service</Link> and <Link href="#" className="text-brand-cyan hover:underline">Privacy Policy</Link>
               </label>
             </div>
 
-            <Link 
-              href="/"
-              className="w-full py-3.5 bg-brand-cyan text-dark-bg font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan text-center"
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 bg-brand-cyan text-dark-bg font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan text-center text-sm cursor-pointer disabled:opacity-50"
             >
-              Start Free Trial <ArrowRight className="w-4 h-4" />
-            </Link>
+              {loading ? "Creating Account..." : "Start Free Trial"} <ArrowRight className="w-4 h-4" />
+            </button>
           </form>
 
           <div className="relative my-10">
@@ -99,8 +244,17 @@ export default function SignupPage() {
             <button className="flex items-center justify-center gap-3 py-3 bg-dark-bg border border-dark-border rounded-xl text-sm text-white font-medium hover:bg-white/5 transition-all">
               <UserPlus className="w-4 h-4" /> Github
             </button>
-            <button className="flex items-center justify-center gap-3 py-3 bg-dark-bg border border-dark-border rounded-xl text-sm text-white font-medium hover:bg-white/5 transition-all">
-              <Globe className="w-4 h-4" /> Google
+            <button 
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading}
+              className="flex items-center justify-center gap-3 py-3 bg-dark-bg border border-dark-border rounded-xl text-sm text-white font-medium hover:bg-white/5 transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {googleLoading ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Globe className="w-4 h-4" />
+              )}{" "}
+              Google
             </button>
           </div>
 

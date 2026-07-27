@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
 
 export async function POST(req: Request) {
   try {
@@ -31,7 +30,7 @@ export async function POST(req: Request) {
       }
     });
 
-    const user = taskWithUser?.phase.roadmap.user;
+    const user = taskWithUser?.phase?.roadmap?.user;
     
     if (user) {
       // Find all tasks for this user's roadmap
@@ -73,16 +72,18 @@ export async function POST(req: Request) {
         ? baselineScore 
         : Math.min(10.0, Number((baselineScore + progressBoost).toFixed(1)));
 
-      // Sort tasks to calculate current active day pointer
       const sortedTasks = allTasks.sort((a, b) => {
+        if (!a.phase || !b.phase) return 0;
         if (a.phase.order !== b.phase.order) {
           return a.phase.order - b.phase.order;
         }
-        return a.day - b.day;
+        const aDay = a.day ?? 0;
+        const bDay = b.day ?? 0;
+        return aDay - bDay;
       });
 
       const nextPending = sortedTasks.find(t => t.status !== "COMPLETED");
-      const nextDay = nextPending ? nextPending.day : user.currentDay;
+      const nextDay = (nextPending && nextPending.day !== null) ? nextPending.day : (user.currentDay ?? 1);
 
       // Persist updated metrics
       await prisma.user.update({

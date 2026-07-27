@@ -1,4 +1,3 @@
-
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -6,23 +5,27 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model User {
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
 
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  username      String?   @unique
-  phone         String?   @unique
-  password      String?
-  image         String?
-  role          String    @default("USER") // USER or ADMIN
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+model User {
+  id                 String          @id @default(cuid())
+  name               String?
+  email              String?         @unique
+  username           String?         @unique
+  phone              String?         @unique
+  password           String?
+  image              String?
+  role               String          @default("USER") // USER or ADMIN
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
   
   // Progress tracking
-  currentDay    Int       @default(1)
-  readinessScore Float     @default(0.0)
-  streak        Int       @default(0)
+  currentDay         Int             @default(1)
+  readinessScore     Float           @default(0.0)
+  streak             Int             @default(0)
 
   // Student profiling answers
   academicYear       String?
@@ -41,9 +44,10 @@ model User {
   placementTimeline  String?
   readinessLevel     String?
   
-  roadmaps      Roadmap[]
-  analytics     Analytics[]
-  activities    Activity[]
+  roadmaps           Roadmap[]
+  surveyResult       SurveyResult?
+  analytics          Analytics[]
+  activities         Activity[]
 }
 
 model SurveyResult {
@@ -56,25 +60,46 @@ model SurveyResult {
 }
 
 model Roadmap {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      String
-  status    String   @default("IN_PROGRESS")
-  tasks     Task[]
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  title       String   @default("My Prep Roadmap")
+  description String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String?
+  status      String   @default("IN_PROGRESS")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  phases      Phase[]
+  tasks       Task[]
+}
+
+model Phase {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  order       Int
+  roadmapId   String
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  tasks       Task[]
 }
 
 model Task {
-  id           String  @id @default(uuid())
-  roadmapId    String
-  roadmap      Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
-  dayNumber    Int
+  id           String   @id @default(uuid())
   title        String
-  category     String
-  status       String  @default("PENDING")
-  resourceName String  @default("Explore Resource")
-  resourceLink String  @default("https://roadmap.sh")
+  description  String?
+  day          Int      @default(1)
+  dayNumber    Int?
+  category     String?
+  status       String   @default("PENDING")
+  type         String   @default("TOPIC")
+  resourceName String   @default("Explore Resource")
+  resourceLink String   @default("https://roadmap.sh")
+  
+  roadmapId    String?
+  roadmap      Roadmap? @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  
+  phaseId      String?
+  phase        Phase?   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
 }
 
 model RoadmapTemplate {
@@ -87,4 +112,34 @@ model RoadmapTemplate {
   resourceLink String @default("https://roadmap.sh")
 
   @@index([roleName])
+}
+
+model Resource {
+  id          String   @id @default(uuid())
+  title       String
+  type        String
+  category    String
+  url         String
+  duration    String?
+  thumbnail   String?
+  isFeatured  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+}
+
+model Analytics {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  metric    String
+  value     Float
+}
+
+model Activity {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  status    String?
+  timestamp DateTime @default(now())
 }
