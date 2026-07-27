@@ -25,16 +25,16 @@ const Pie = dynamic(() => import("recharts").then(m => m.Pie), { ssr: false });
 
 interface Task {
   id: string;
-  title: string;
+  title: string | null;
   description: string | null;
-  day: number;
+  day: number | null;
   status: string;
   type: string;
 }
 
 interface Phase {
   id: string;
-  title: string;
+  title: string | null;
   description: string | null;
   order: number;
   tasks: Task[];
@@ -42,7 +42,7 @@ interface Phase {
 
 interface Roadmap {
   id: string;
-  title: string;
+  title: string | null;
   description: string | null;
   phases: Phase[];
 }
@@ -103,24 +103,24 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
     if (skill === 'DSA') {
       filtered = allTasks.filter(t => 
         t.phaseFocus === 'dsa' || 
-        /dsa|array|string|list|tree|graph|search|sort|recursion|dp/i.test(t.title)
+        /dsa|array|string|list|tree|graph|search|sort|recursion|dp/i.test(t.title ?? "")
       );
     } else if (skill === 'DBMS') {
       filtered = allTasks.filter(t => 
-        /dbms|sql|database|query|normalization|index/i.test(t.title)
+        /dbms|sql|database|query|normalization|index/i.test(t.title ?? "")
       );
     } else if (skill === 'OS') {
       filtered = allTasks.filter(t => 
-        /os\b|process|thread|deadlock|memory|scheduling/i.test(t.title)
+        /os\b|process|thread|deadlock|memory|scheduling/i.test(t.title ?? "")
       );
     } else if (skill === 'CN') {
       filtered = allTasks.filter(t => 
-        /cn\b|network|ip\b|tcp|udp|http|routing|dns/i.test(t.title)
+        /cn\b|network|ip\b|tcp|udp|http|routing|dns/i.test(t.title ?? "")
       );
     } else if (skill === 'Web Dev') {
       filtered = allTasks.filter(t => 
         t.phaseFocus === 'projects' || 
-        /web|dev|html|css|js\b|javascript|react|next|frontend|backend|api/i.test(t.title)
+        /web|dev|html|css|js\b|javascript|react|next|frontend|backend|api/i.test(t.title ?? "")
       );
     }
     
@@ -147,14 +147,14 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
     if (domain === 'Theory') {
       return allTasks.filter(t => 
         t.type === 'TOPIC' && 
-        (/dbms|sql|database|os\b|process|thread|memory|cn\b|network|tcp|ip/i.test(t.title) || t.phaseFocus === 'core_cs')
+        (/dbms|sql|database|os\b|process|thread|memory|cn\b|network|tcp|ip/i.test(t.title ?? "") || t.phaseFocus === 'core_cs')
       ).length;
     } else if (domain === 'Coding') {
       return allTasks.filter(t => t.type === 'PROBLEM' || t.phaseFocus === 'dsa').length;
     } else if (domain === 'System Design') {
       return allTasks.filter(t => 
         t.phaseFocus === 'system_design' || 
-        /system design|architecture|scalability/i.test(t.title) ||
+        /system design|architecture|scalability/i.test(t.title ?? "") ||
         t.type === 'MOCK'
       ).length;
     }

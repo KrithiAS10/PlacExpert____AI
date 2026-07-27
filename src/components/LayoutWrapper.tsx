@@ -209,7 +209,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
       {/* Main content wrapper — padding adapts if sidebar is opened/closed */}
       <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${!isAuthPage && sidebarOpen && user ? "lg:ml-64" : "lg:ml-0"}`}>
         {!isAuthPage && user && (
-          <Navbar user={user} onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+          <Navbar user={user} onMenuClick={() => setSidebarOpen(!sidebarOpen)} onLogout={handleLogout} />
         )}
         
         <main className={`flex-1 ${!isAuthPage && user ? "p-4 sm:p-6 lg:p-8" : ""}`}>
@@ -261,7 +261,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
               {/* Authentication Mode Switcher */}
               <div className="flex border-b border-dark-border mb-6 relative z-10">
                 <button
-                  onClick={() => { setAuthMode("register"); setErrorMsg(""); }}
+                  onClick={() => { setAuthMode("register"); setErrorMsg(""); setSuccessMsg(""); }}
                   className={`flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors ${
                     authMode === "register" ? "text-brand-cyan border-b-2 border-brand-cyan" : "text-gray-500 hover:text-white"
                   }`}
@@ -269,7 +269,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
                   Create Account
                 </button>
                 <button
-                  onClick={() => { setAuthMode("login"); setErrorMsg(""); }}
+                  onClick={() => { setAuthMode("login"); setErrorMsg(""); setSuccessMsg(""); }}
                   className={`flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-colors ${
                     authMode === "login" ? "text-brand-cyan border-b-2 border-brand-cyan" : "text-gray-500 hover:text-white"
                   }`}
