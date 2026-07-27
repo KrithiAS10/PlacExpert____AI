@@ -1,3 +1,4 @@
+
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
@@ -5,12 +6,8 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
-
 model User {
+
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
@@ -49,64 +46,45 @@ model User {
   activities    Activity[]
 }
 
-model Roadmap {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  phases      Phase[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model SurveyResult {
+  id            String   @id @default(uuid())
+  userId        String   @unique // Ensures one survey result per user
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  predictedRole String
+  allScores     String   // Store as a JSON string
+  createdAt     DateTime @default(now())
 }
 
-model Phase {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  order       Int
-  roadmapId   String
-  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id])
-  tasks       Task[]
+model Roadmap {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      String
+  status    String   @default("IN_PROGRESS")
+  tasks     Task[]
+  createdAt DateTime @default(now())
 }
 
 model Task {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  day         Int
-  status      String   @default("PENDING") // PENDING, COMPLETED, FAILED
-  type        String   @default("TOPIC")   // TOPIC, PROBLEM, MOCK
-  phaseId     String
-  phase       Phase    @relation(fields: [phaseId], references: [id])
+  id           String  @id @default(uuid())
+  roadmapId    String
+  roadmap      Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  dayNumber    Int
+  title        String
+  category     String
+  status       String  @default("PENDING")
+  resourceName String  @default("Explore Resource")
+  resourceLink String  @default("https://roadmap.sh")
 }
 
-model Analytics {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  date        DateTime @default(now())
-  metric      String   // e.g., "Readiness", "StudyHours"
-  value       Float
-}
+model RoadmapTemplate {
+  id           String @id @default(uuid())
+  roleName     String
+  dayNumber    Int
+  title        String
+  category     String @default("General")
+  resourceName String @default("Explore Resource")
+  resourceLink String @default("https://roadmap.sh")
 
-model Activity {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  action      String
-  status      String?
-  timestamp   DateTime @default(now())
-}
-
-model Resource {
-  id          String   @id @default(cuid())
-  title       String
-  type        String   // ARTICLE, VIDEO, COURSE
-  category    String
-  url         String
-  duration    String?
-  thumbnail   String?
-  isFeatured  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  @@index([roleName])
 }
