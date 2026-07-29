@@ -11,21 +11,21 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  username      String?   @unique
-  phone         String?   @unique
-  password      String?
-  image         String?
-  role          String    @default("USER") // USER or ADMIN
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id                 String          @id @default(cuid())
+  name               String?
+  email              String?         @unique
+  username           String?         @unique
+  phone              String?         @unique
+  password           String?
+  image              String?
+  role               String          @default("USER") // USER or ADMIN
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
   
   // Progress tracking
-  currentDay    Int       @default(1)
-  readinessScore Float     @default(0.0)
-  streak        Int       @default(0)
+  currentDay         Int             @default(1)
+  readinessScore     Float           @default(0.0)
+  streak             Int             @default(0)
 
   // Student profiling answers
   academicYear       String?
@@ -45,67 +45,82 @@ model User {
   readinessLevel     String?
   leetcodeUsername   String?
   
-  roadmaps        Roadmap[]
-  analytics       Analytics[]
-  activities      Activity[]
-  solvedProblems  SolvedProblem[]
+
+  roadmaps           Roadmap[]
+  surveyResult       SurveyResult?
+  analytics          Analytics[]
+  activities         Activity[]
+}
+
+model SurveyResult {
+  id            String   @id @default(uuid())
+  userId        String   @unique // Ensures one survey result per user
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  predictedRole String
+  allScores     String   // Store as a JSON string
+  createdAt     DateTime @default(now())
 }
 
 model Roadmap {
-  id          String   @id @default(cuid())
-  title       String
+  id          String   @id @default(uuid())
+  title       String   @default("My Prep Roadmap")
   description String?
   userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  phases      Phase[]
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String?
+  status      String   @default("IN_PROGRESS")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  phases      Phase[]
+  tasks       Task[]
 }
 
 model Phase {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
   order       Int
   roadmapId   String
-  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id])
+  roadmap     Roadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
   tasks       Task[]
 }
 
 model Task {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  day         Int
-  status      String   @default("PENDING") // PENDING, COMPLETED, FAILED
-  type        String   @default("TOPIC")   // TOPIC, PROBLEM, MOCK
-  phaseId         String
-  phase           Phase    @relation(fields: [phaseId], references: [id])
-  solvedProblems  SolvedProblem[]
+
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  day          Int      @default(1)
+  dayNumber    Int?
+  category     String?
+  status       String   @default("PENDING")
+  type         String   @default("TOPIC")
+  resourceName String   @default("Explore Resource")
+  resourceLink String   @default("https://roadmap.sh")
+  
+  roadmapId    String?
+  roadmap      Roadmap? @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  
+  phaseId      String?
+  phase        Phase?   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
 }
 
-model Analytics {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  date        DateTime @default(now())
-  metric      String   // e.g., "Readiness", "StudyHours"
-  value       Float
-}
+model RoadmapTemplate {
+  id           String @id @default(uuid())
+  roleName     String
+  dayNumber    Int
+  title        String
+  category     String @default("General")
+  resourceName String @default("Explore Resource")
+  resourceLink String @default("https://roadmap.sh")
 
-model Activity {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  action      String
-  status      String?
-  timestamp   DateTime @default(now())
+  @@index([roleName])
 }
 
 model Resource {
-  id          String   @id @default(cuid())
+  id          String   @id @default(uuid())
   title       String
-  type        String   // ARTICLE, VIDEO, COURSE
+  type        String
   category    String
   url         String
   duration    String?
@@ -114,16 +129,21 @@ model Resource {
   createdAt   DateTime @default(now())
 }
 
-model SolvedProblem {
-  id        String   @id @default(cuid())
+
+model Analytics {
+  id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  proofUrl  String?
-  notes     String?
-  solvedAt  DateTime @default(now())
+  date      DateTime @default(now())
+  metric    String
+  value     Float
+}
 
-  @@index([userId])
-  @@index([taskId])
+model Activity {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  status    String?
+  timestamp DateTime @default(now())
 }
