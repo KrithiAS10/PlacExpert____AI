@@ -53,6 +53,7 @@ interface AnalyticsUser {
   readinessLevel: string | null;
   streak: number;
   roadmaps?: Roadmap[];
+  totalSolvedProblems?: number;
 }
 
 interface AnalyticsClientProps {
@@ -74,8 +75,8 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
 
   const completedTasks = allTasks.filter(t => t.status === "COMPLETED");
 
-  // 1. Solved problems: completed tasks of type PROBLEM
-  const solvedProblemsCount = completedTasks.filter(t => t.type === "PROBLEM").length;
+  // 1. Solved problems: total solved problem records from DB or completed problem tasks
+  const solvedProblemsCount = user.totalSolvedProblems ?? completedTasks.filter(t => t.type === "PROBLEM").length;
 
   // 2. Study hours: sum of estimated durations of completed tasks
   const calculatedStudyHours = completedTasks.reduce((total, task) => {

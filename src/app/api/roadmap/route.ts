@@ -20,7 +20,10 @@ export async function GET() {
               orderBy: { order: 'asc' },
               include: {
                 tasks: {
-                  orderBy: { day: 'asc' }
+                  orderBy: { day: 'asc' },
+                  include: {
+                    _count: { select: { solvedProblems: true } }
+                  }
                 }
               }
             }
@@ -34,6 +37,11 @@ export async function GET() {
     }
 
     const activeRoadmap = user.roadmaps[0] || null;
+
+    // Count total solved problems for this user
+    const totalSolvedProblems = await prisma.solvedProblem.count({
+      where: { userId: user.id }
+    });
 
     // Calculate currentDay dynamically based on calendar days elapsed since user created roadmap
     let currentDay = user.currentDay || 1;
@@ -121,6 +129,7 @@ export async function GET() {
         dailyStudyTime: user.dailyStudyTime,
         preferredLang: user.preferredLang,
         placementTimeline: user.placementTimeline,
+        totalSolvedProblems,
       },
       roadmap: activeRoadmap,
       weakAreas

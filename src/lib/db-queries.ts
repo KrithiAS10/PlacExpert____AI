@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 
 export async function getUserData(email: string) {
-  return await prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email },
     include: {
       roadmaps: {
@@ -17,9 +17,20 @@ export async function getUserData(email: string) {
       activities: {
         orderBy: { timestamp: 'desc' },
         take: 10
+      },
+      _count: {
+        select: { solvedProblems: true }
       }
     }
   });
+
+  if (!user) return null;
+
+  // Attach totalSolvedProblems for easier access
+  return {
+    ...user,
+    totalSolvedProblems: user._count.solvedProblems
+  };
 }
 
 export async function getResources() {

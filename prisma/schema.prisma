@@ -43,10 +43,12 @@ model User {
   preferredLang      String?
   placementTimeline  String?
   readinessLevel     String?
+  leetcodeUsername   String?
   
-  roadmaps      Roadmap[]
-  analytics     Analytics[]
-  activities    Activity[]
+  roadmaps        Roadmap[]
+  analytics       Analytics[]
+  activities      Activity[]
+  solvedProblems  SolvedProblem[]
 }
 
 model Roadmap {
@@ -77,8 +79,9 @@ model Task {
   day         Int
   status      String   @default("PENDING") // PENDING, COMPLETED, FAILED
   type        String   @default("TOPIC")   // TOPIC, PROBLEM, MOCK
-  phaseId     String
-  phase       Phase    @relation(fields: [phaseId], references: [id])
+  phaseId         String
+  phase           Phase    @relation(fields: [phaseId], references: [id])
+  solvedProblems  SolvedProblem[]
 }
 
 model Analytics {
@@ -109,4 +112,18 @@ model Resource {
   thumbnail   String?
   isFeatured  Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+model SolvedProblem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  proofUrl  String?
+  notes     String?
+  solvedAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([taskId])
 }

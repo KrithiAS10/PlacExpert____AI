@@ -26,6 +26,9 @@ import {
   Trophy,
   ChevronRight,
   XCircle,
+  FileCheck,
+  X,
+  Link2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -40,6 +43,7 @@ interface Task {
   day: number;
   status: string;
   type: string;
+  _count?: { solvedProblems: number };
 }
 interface Phase {
   id: string;
@@ -72,6 +76,7 @@ interface UserProfile {
   preferredLang: string | null;
   placementTimeline: string | null;
   analytics?: any[];
+  totalSolvedProblems?: number;
 }
 interface WeakArea {
   name: string;
@@ -263,6 +268,15 @@ export default function RoadmapPage() {
   const [quizPassed, setQuizPassed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Realistic Verification & Proof Modal State ──
+  const [visitedLinks, setVisitedLinks] = useState<Record<string, boolean>>({});
+  const [showProofModal, setShowProofModal] = useState(false);
+  const [proofInput, setProofInput] = useState("");
+  const [proofError, setProofError] = useState<string | null>(null);
+  const [solvedCounts, setSolvedCounts] = useState<Record<string, number>>({});
+  const [solvingProblem, setSolvingProblem] = useState(false);
+  const REQUIRED_SOLVED = 5;
+
   const fetchRoadmapData = () => {
     fetch("/api/roadmap")
       .then((r) => r.json())
@@ -285,10 +299,67 @@ export default function RoadmapPage() {
     fetchRoadmapData();
   }, []);
 
+  // ── Track external platform link visit ──
+  const handleLinkVisit = (taskId: string) => {
+    setVisitedLinks(prev => ({ ...prev, [taskId]: true }));
+  };
+
+  // ── Submit proof to mark a problem/checkpoint solved ──
+  const submitProofAndSolve = async (taskId: string, taskType: string) => {
+    setProofError(null);
+
+    // Realistic verification validation rules
+    const trimmed = proofInput.trim();
+    if (!trimmed) {
+      setProofError("Please enter proof of your work before submitting.");
+      return;
+    }
+
+    let isUrl = trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("www.") || /^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}/.test(trimmed);
+    let finalProofUrl = isUrl ? (trimmed.startsWith("http") ? trimmed : `https://${trimmed}`) : null;
+
+    if (taskType === "PROBLEM") {
+      if (!isUrl && trimmed.length < 15) {
+        setProofError("Please provide a valid submission URL or a brief code solution (min 15 chars).");
+        return;
+      }
+    } else {
+      if (!isUrl && trimmed.length < 12) {
+        setProofError("Please write a brief summary of what you studied or completed (min 12 chars).");
+        return;
+      }
+    }
+
+    setSolvingProblem(true);
+    try {
+      const res = await fetch("/api/roadmap/solve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          taskId,
+          proofUrl: finalProofUrl,
+          notes: finalProofUrl ? null : trimmed
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSolvedCounts(prev => ({ ...prev, [taskId]: data.solvedCount }));
+        setShowProofModal(false);
+        setProofInput("");
+        fetchRoadmapData();
+      } else {
+        setProofError(data.error || "Failed to verify completion");
+      }
+    } catch {
+      setProofError("An unexpected error occurred while verifying");
+    } finally {
+      setSolvingProblem(false);
+    }
+  };
+
   // ── Start a fresh quiz for the current task ──
   const startQuiz = (task: Task) => {
     const qs = pickQuizQuestions(task);
-    // Pick 5 questions, shuffle order
     const shuffled = [...qs].sort(() => Math.random() - 0.5).slice(0, 5);
     setQuizQuestions(shuffled);
     setCurrentQ(0);
@@ -348,7 +419,6 @@ export default function RoadmapPage() {
     }
   };
 
-  // We need a ref to todayTask so markTaskComplete can read it
   const todayTaskRef = React.useRef<Task | null>(null);
 
   if (loading) {
@@ -394,7 +464,6 @@ export default function RoadmapPage() {
   const todayTask     = firstPendingIdx !== -1 ? allTasks[firstPendingIdx] : allTasks[allTasks.length - 1];
   const isAllDone     = firstPendingIdx === -1;
 
-  // Keep ref updated for markTaskComplete
   if (todayTaskRef) todayTaskRef.current = todayTask ?? null;
 
   const totalDays     = allTasks.length > 0 ? Math.max(...allTasks.map((t) => t.day)) : 45;
@@ -449,7 +518,6 @@ export default function RoadmapPage() {
               const startDay  = phase.tasks.length ? Math.min(...phase.tasks.map((t) => t.day)) : phase.order * 7 - 6;
               const endDay    = phase.tasks.length ? Math.max(...phase.tasks.map((t) => t.day)) : phase.order * 7;
               
-              // Calculate phase status: all tasks done, active, or locked
               const phaseDone = phase.tasks.filter((t) => t.status === "COMPLETED").length;
               const isPhaseComplete = phaseDone === phase.tasks.length;
               
@@ -551,6 +619,7 @@ export default function RoadmapPage() {
                                       href={task.description}
                                       target="_blank"
                                       rel="noopener noreferrer"
+                                      onClick={() => handleLinkVisit(task.id)}
                                       className="p-1 rounded-md bg-white/5 border border-white/10 hover:text-brand-cyan hover:border-brand-cyan/20 transition-all text-gray-500"
                                       title={`Solve on ${pMeta.label}`}
                                     >
@@ -597,6 +666,7 @@ export default function RoadmapPage() {
           ) : todayTask ? (() => {
             const pMeta = resolvePlatform(todayTask.description, todayTask.type);
             const PlatformIcon = pMeta.icon;
+            const linkVisited = Boolean(visitedLinks[todayTask.id]);
             return (
               <div className="relative overflow-hidden rounded-xl border border-brand-cyan/20 bg-gradient-to-br from-brand-cyan/10 via-brand-blue/5 to-transparent p-4">
                 <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-cyan/5 blur-3xl pointer-events-none" />
@@ -612,7 +682,8 @@ export default function RoadmapPage() {
                   <h3 className="text-sm font-bold text-white leading-tight">{todayTask.title}</h3>
                   
                   <p className="text-[11px] text-gray-400 leading-relaxed bg-white/5 border border-white/5 p-2.5 rounded-lg">
-                    💡 <strong>Study the resource</strong>, then click <strong>&quot;Take Quiz to Complete&quot;</strong>. Answer 4 out of 5 tough questions correctly to unlock the next task — just like freeCodeCamp!
+                    💡 <strong>Step 1:</strong> Click the resource link below to solve/study on {pMeta.label}.<br />
+                    💡 <strong>Step 2:</strong> Submit proof of your completed work to unlock the quiz!
                   </p>
                   
                   {todayTask.description ? (
@@ -620,10 +691,15 @@ export default function RoadmapPage() {
                       href={todayTask.description}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full py-2 bg-brand-cyan text-dark-bg font-bold rounded-lg flex items-center justify-center gap-1.5 hover:bg-brand-cyan/95 transition-all text-xs shadow-glow-cyan"
+                      onClick={() => handleLinkVisit(todayTask.id)}
+                      className={`w-full py-2 font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all text-xs shadow-glow-cyan ${
+                        linkVisited
+                          ? "bg-brand-green/20 border border-brand-green/40 text-brand-green"
+                          : "bg-brand-cyan text-dark-bg hover:bg-brand-cyan/95"
+                      }`}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
-                      Solve on {pMeta.label}
+                      {linkVisited ? `✅ Visited ${pMeta.label} Resource` : `Open & Solve on ${pMeta.label}`}
                     </a>
                   ) : (
                     <button className="w-full py-2 bg-brand-cyan text-dark-bg font-bold rounded-lg flex items-center justify-center gap-1.5 hover:bg-brand-cyan/95 transition-all text-xs shadow-glow-cyan">
@@ -640,23 +716,131 @@ export default function RoadmapPage() {
           {!isAllDone && todayTask && (
             <div className="glass-card rounded-xl p-4 space-y-3 border border-white/[0.04]">
               {!quizActive ? (
-                // Pre-quiz state: Show the "Take Quiz" CTA
-                <>
-                  <div className="flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-brand-cyan shrink-0" />
-                    <h4 className="text-xs font-bold text-white uppercase tracking-wider">Complete Task via Quiz</h4>
-                  </div>
-                  <p className="text-[10px] text-gray-500 leading-relaxed">
-                    Study the resource above, then pass the quiz (4/5 correct) to mark this task complete — no file uploads needed!
-                  </p>
-                  <button
-                    onClick={() => startQuiz(todayTask)}
-                    className="w-full py-2.5 bg-gradient-to-r from-brand-cyan to-brand-blue text-dark-bg font-bold rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-all text-xs shadow-glow-cyan"
-                  >
-                    <Brain className="w-3.5 h-3.5" />
-                    Take Quiz to Complete Task
-                  </button>
-                </>
+                // Pre-quiz state: ALL task types need solving/completing 5 items first with realistic proof
+                (() => {
+                  const currentSolved = solvedCounts[todayTask.id] ?? todayTask._count?.solvedProblems ?? 0;
+                  const quizReady = currentSolved >= REQUIRED_SOLVED;
+                  const solvedPct = Math.min(100, Math.round((currentSolved / REQUIRED_SOLVED) * 100));
+                  const linkVisited = Boolean(visitedLinks[todayTask.id]);
+
+                  // Adaptive labels based on task type
+                  const taskLabels = todayTask.type === "PROBLEM"
+                    ? { doneMsg: "✅ 5 Problems Solved & Verified!", pendingMsg: "🔥 Practice 5 Questions First", btnLabel: "⚡ Submit Proof & Verify Question", description: "Solve", itemName: "question", allDone: "questions solved & verified" }
+                    : todayTask.type === "MOCK"
+                    ? { doneMsg: "✅ 5 Practices Verified!", pendingMsg: "🎯 Practice 5 Items First", btnLabel: "⚡ Submit Proof & Verify Practice", description: "Complete", itemName: "practice item", allDone: "practice items completed" }
+                    : { doneMsg: "✅ 5 Checkpoints Verified!", pendingMsg: "📚 Study 5 Questions/Checkpoints First", btnLabel: "⚡ Submit Proof & Verify Checkpoint", description: "Complete", itemName: "question", allDone: "questions verified" };
+
+                  return (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <FileCheck className="w-4 h-4 text-brand-cyan shrink-0" />
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Realistic Work Verification</h4>
+                      </div>
+
+                      {/* Solve/Complete gate for ALL task types */}
+                      <div className={`rounded-lg p-3 border space-y-2.5 ${
+                        quizReady
+                          ? "border-brand-green/20 bg-brand-green/[0.04]"
+                          : "border-brand-orange/20 bg-brand-orange/[0.04]"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                            quizReady ? "text-brand-green" : "text-brand-orange"
+                          }`}>
+                            {quizReady ? taskLabels.doneMsg : taskLabels.pendingMsg}
+                          </span>
+                          <span className={`text-xs font-bold ${
+                            quizReady ? "text-brand-green" : "text-brand-orange"
+                          }`}>
+                            {currentSolved}/{REQUIRED_SOLVED}
+                          </span>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+                          <motion.div
+                            className={`h-full rounded-full ${
+                              quizReady
+                                ? "bg-gradient-to-r from-brand-green to-brand-teal"
+                                : "bg-gradient-to-r from-brand-orange to-brand-cyan"
+                            }`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${solvedPct}%` }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
+                          />
+                        </div>
+
+                        {/* Individual progress dots */}
+                        <div className="flex gap-1.5">
+                          {Array.from({ length: REQUIRED_SOLVED }).map((_, i) => (
+                            <div
+                              key={i}
+                              className={`flex-1 h-1 rounded-full transition-all duration-300 ${
+                                i < currentSolved ? "bg-brand-green" : "bg-white/10"
+                              }`}
+                            />
+                          ))}
+                        </div>
+
+                        {!quizReady && (
+                          <>
+                            <p className="text-[10px] text-gray-400 leading-relaxed">
+                              {!linkVisited ? (
+                                <span className="text-brand-orange font-semibold">
+                                  ⚠️ Click the resource link above to open and study the platform first.
+                                </span>
+                              ) : (
+                                <span>
+                                  Submit proof of work (submission URL or solution summary) for each of your {REQUIRED_SOLVED - currentSolved} remaining {taskLabels.itemName}{REQUIRED_SOLVED - currentSolved > 1 ? "s" : ""}.
+                                </span>
+                              )}
+                            </p>
+
+                            <button
+                              onClick={() => {
+                                if (!linkVisited) {
+                                  alert("Please click and open the resource link above first before submitting proof of completion!");
+                                  return;
+                                }
+                                setShowProofModal(true);
+                              }}
+                              disabled={solvingProblem}
+                              className={`w-full py-2 font-bold rounded-lg flex items-center justify-center gap-2 transition-all text-xs border ${
+                                linkVisited
+                                  ? "bg-brand-orange/20 border-brand-orange/40 text-brand-orange hover:bg-brand-orange/30 cursor-pointer shadow-glow-orange"
+                                  : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
+                              }`}
+                            >
+                              <FileCheck className="w-3.5 h-3.5" />
+                              {taskLabels.btnLabel}
+                            </button>
+                          </>
+                        )}
+
+                        {quizReady && (
+                          <p className="text-[10px] text-brand-green leading-relaxed font-semibold">
+                            🎉 All {REQUIRED_SOLVED} {taskLabels.allDone}! Quiz is now unlocked below!
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => startQuiz(todayTask)}
+                        disabled={!quizReady}
+                        className={`w-full py-2.5 font-bold rounded-lg flex items-center justify-center gap-2 transition-all text-xs ${
+                          quizReady
+                            ? "bg-gradient-to-r from-brand-cyan to-brand-blue text-dark-bg hover:opacity-90 shadow-glow-cyan cursor-pointer"
+                            : "bg-white/5 text-gray-600 cursor-not-allowed border border-white/5"
+                        }`}
+                      >
+                        <Brain className="w-3.5 h-3.5" />
+                        {quizReady
+                          ? "Take Quiz to Complete Task"
+                          : `🔒 Verify ${REQUIRED_SOLVED} Items to Unlock Quiz`}
+                      </button>
+                    </>
+                  );
+                })()
               ) : quizDone ? (
                 // Quiz finished — show result
                 <>
@@ -825,6 +1009,100 @@ export default function RoadmapPage() {
         </div>
 
       </div>
+
+      {/* ── Proof Verification Modal ── */}
+      <AnimatePresence>
+        {showProofModal && todayTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-dark-card border border-white/10 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl relative"
+            >
+              <button
+                onClick={() => {
+                  setShowProofModal(false);
+                  setProofError(null);
+                  setProofInput("");
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-white/5 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan">
+                  <FileCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Submit Proof of Work</h3>
+                  <p className="text-xs text-gray-400">Verify completion for item #{(solvedCounts[todayTask.id] || 0) + 1} of 5</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-300 block">
+                  {todayTask.type === "PROBLEM"
+                    ? "Submission Link or Code Solution:"
+                    : "Key Takeaway / Solution Summary:"}
+                </label>
+
+                {todayTask.type === "PROBLEM" ? (
+                  <input
+                    type="text"
+                    value={proofInput}
+                    onChange={(e) => setProofInput(e.target.value)}
+                    placeholder="e.g. https://leetcode.com/submissions/detail/1234567/ or paste code..."
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 outline-none focus:border-brand-cyan/50 transition-all"
+                  />
+                ) : (
+                  <textarea
+                    rows={3}
+                    value={proofInput}
+                    onChange={(e) => setProofInput(e.target.value)}
+                    placeholder="Write a short summary of the key concept or practice problem you solved (min 12 chars)..."
+                    className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-white placeholder-gray-500 outline-none focus:border-brand-cyan/50 transition-all resize-none"
+                  />
+                )}
+
+                {proofError && (
+                  <p className="text-[11px] text-brand-red font-medium flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" /> {proofError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => {
+                    setShowProofModal(false);
+                    setProofError(null);
+                    setProofInput("");
+                  }}
+                  className="flex-1 py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold text-gray-300 hover:bg-white/10 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => submitProofAndSolve(todayTask.id, todayTask.type)}
+                  disabled={solvingProblem}
+                  className="flex-1 py-2.5 bg-brand-cyan text-dark-bg rounded-xl text-xs font-bold hover:bg-brand-cyan/90 transition-all shadow-glow-cyan flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {solvingProblem ? (
+                    <span>Verifying...</span>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Verify & Log</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
