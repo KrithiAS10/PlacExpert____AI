@@ -191,7 +191,6 @@ export default function ProfilingPage() {
         </div>
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-white">Analyzing Your Profile</h2>
-          <p className="text-gray-400">Our XGBoost ML model is processing your answers...</p>
         </div>
       </div>
     );

@@ -9,7 +9,8 @@ import {
   BarChart3, 
   AlertTriangle,
   Zap,
-  Target
+  Target,
+  Mic
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -53,7 +54,7 @@ export function Sidebar({ user }: SidebarProps) {
       icon: Map, 
       badge: user?.currentDay ? `Day ${user.currentDay}` : "Day 1" 
     },
-    { name: "Mock Interview", href: "/mock-interview", icon: MessageSquare },
+    { name: "Voice Mock Interview", href: "/mock-interview", icon: Mic, badge: "AI Voice" },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
   ];
 
