@@ -92,7 +92,12 @@ export async function POST(req: Request) {
     else if (rawReadiness === "Actively Practicing") readinessScore = 6.5;
     else if (rawReadiness === "Ready for Interviews") readinessScore = 8.8;
     
-    // Delete existing roadmap database entries for user to reset
+    // Delete existing roadmap database entries (and associated solved problems) for user to reset
+    await prisma.solvedProblem.deleteMany({
+      where: {
+        userId: user.id
+      }
+    });
     await prisma.task.deleteMany({
       where: {
         phase: {
