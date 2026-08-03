@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   Zap, 
@@ -81,7 +82,14 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
     );
   }
 
-  const isNewUser = !user.readinessScore && user.streak === 0 && user.currentDay === 1;
+  const [showExitModal, setShowExitModal] = useState(false);
+  const [isExiting, setIsExiting] = useState(false);
+
+  const hasCompletedProfiling = Boolean(
+    user.domainInterest || 
+    (user.roadmaps && user.roadmaps.length > 0 && user.roadmaps[0].phases.length > 0)
+  );
+  const isNewUser = !hasCompletedProfiling;
 
   // Flatten all tasks from roadmaps
   const allTasks = user.roadmaps?.flatMap(rm => 
@@ -100,6 +108,23 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
   }, 0);
 
   const hasAttendedTasks = completedTasks.length > 0;
+
+  const handleExitRoadmap = async () => {
+    setIsExiting(true);
+    try {
+      const res = await fetch("/api/roadmap/exit", { method: "POST" });
+      if (res.ok) {
+        window.location.href = "/profiling";
+      } else {
+        alert("Failed to discontinue roadmap. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred while exiting roadmap.");
+    } finally {
+      setIsExiting(false);
+    }
+  };
 
   const stats = [
     { 
@@ -134,6 +159,46 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
 
   return (
     <div className="max-w-7xl mx-auto space-y-10 pb-12">
+      {/* Exit Roadmap Confirmation Modal */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-dark-card border border-white/10 p-6 rounded-3xl max-w-md w-full space-y-5 shadow-2xl"
+          >
+            <div className="flex items-center gap-3 text-red-400">
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                <Target className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Discontinue Current Roadmap?</h3>
+                <p className="text-xs text-gray-400">Exit active track & reset assessment</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              Are you sure you want to end your current <strong className="text-white">{user.domainInterest || "Placement"}</strong> roadmap? This will reset your progress so you can take a new profiling assessment and generate a fresh roadmap.
+            </p>
+            <div className="flex gap-3 justify-end pt-2">
+              <button
+                onClick={() => setShowExitModal(false)}
+                disabled={isExiting}
+                className="px-4 py-2.5 bg-white/5 border border-white/10 text-xs font-bold text-gray-300 rounded-xl hover:bg-white/10 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExitRoadmap}
+                disabled={isExiting}
+                className="px-4 py-2.5 bg-red-500/20 border border-red-500/40 text-xs font-bold text-red-400 rounded-xl hover:bg-red-500/30 transition-all flex items-center gap-2"
+              >
+                {isExiting ? "Exiting Roadmap..." : "Exit & Start New Profiling"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Welcome Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
@@ -147,17 +212,25 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
             }
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {isNewUser ? (
             <Link href="/profiling" className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
               <Play className="w-4 h-4 fill-dark-bg" />
               Start Profiling
             </Link>
           ) : (
-            <Link href="/roadmap" className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
-              <Play className="w-4 h-4 fill-dark-bg" />
-              Resume Roadmap
-            </Link>
+            <>
+              <Link href="/roadmap" className="px-5 py-2.5 bg-brand-cyan text-dark-bg text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
+                <Play className="w-4 h-4 fill-dark-bg" />
+                Continue to Roadmap
+              </Link>
+              <button
+                onClick={() => setShowExitModal(true)}
+                className="px-4 py-2.5 bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-red-500/20 transition-all"
+              >
+                Exit Roadmap
+              </button>
+            </>
           )}
           <Link href="/mock-interview" className="px-5 py-2.5 bg-dark-card border border-dark-border text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-dark-hover transition-all">
             <MessageSquare className="w-4 h-4" />
@@ -256,9 +329,15 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
                   <span className="text-gray-500">Duration</span>
                   <span className="text-white font-medium">90 mins</span>
                 </div>
-                <Link href="/roadmap" className="w-full py-4 bg-brand-cyan text-dark-bg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
-                  View Roadmap
+                <Link href="/roadmap" className="w-full py-3.5 bg-brand-cyan text-dark-bg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan">
+                  Continue to Roadmap
                 </Link>
+                <button
+                  onClick={() => setShowExitModal(true)}
+                  className="w-full py-2 bg-transparent text-gray-400 text-xs font-semibold hover:text-red-400 transition-colors text-center"
+                >
+                  Exit / Discontinue Roadmap
+                </button>
               </div>
             </div>
           )}

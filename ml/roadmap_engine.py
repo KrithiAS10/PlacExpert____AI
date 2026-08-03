@@ -31,12 +31,20 @@ import json
 # RESOURCE URL MAP — 100% FREE platforms only
 # ---------------------------------------------------------------------------
 RESOURCE_URLS = {
+    # Environment Setup & IDEs
+    "Set up Java development environment & IDE":     "https://www.geeksforgeeks.org/how-to-set-up-java-development-environment/",
+    "Set up Python development environment & IDE":   "https://www.geeksforgeeks.org/set-up-python-development-environment/",
+    "Set up C++ development environment & IDE":      "https://www.geeksforgeeks.org/setting-up-c-development-environment/",
+    "Set up JavaScript development environment & IDE":"https://www.geeksforgeeks.org/how-to-setup-javascript-development-environment/",
+    "Set up Web Development Environment & IDE":      "https://www.geeksforgeeks.org/web-development/",
+    "Git & GitHub Environment Setup":                "https://www.geeksforgeeks.org/git-tutorial/",
+
     # DSA — Arrays
-    "Arrays — Traversal, Search, Insert":           "https://leetcode.com/tag/array/",
+    "Arrays — Traversal, Search, Insert":           "https://www.geeksforgeeks.org/array-data-structure/",
     "Arrays — Two Pointers, Sliding Window":         "https://leetcode.com/tag/two-pointers/",
     "Advanced DP — Matrix Chain, Edit Distance":     "https://leetcode.com/tag/dynamic-programming/",
     # DSA — Strings
-    "Strings — Palindrome, Anagram, Reversal":       "https://leetcode.com/tag/string/",
+    "Strings — Palindrome, Anagram, Reversal":       "https://www.geeksforgeeks.org/string-data-structure/",
     "Strings — KMP, Rabin-Karp Pattern Matching":    "https://leetcode.com/tag/string-matching/",
     # Sorting
     "Sorting — Bubble, Selection, Insertion Sort":   "https://www.geeksforgeeks.org/sorting-algorithms/",
@@ -46,23 +54,23 @@ RESOURCE_URLS = {
     "Recursion — Basics and Simple Problems":        "https://www.geeksforgeeks.org/recursion/",
     "Recursion & Backtracking — N-Queens, Subsets":  "https://leetcode.com/tag/backtracking/",
     # Stacks/Queues
-    "Stacks and Queues — Implementation and Applications": "https://leetcode.com/tag/stack/",
+    "Stacks and Queues — Implementation and Applications": "https://www.geeksforgeeks.org/stack-data-structure/",
     # Linked Lists
-    "Linked Lists — Singly, Doubly, Circular":       "https://leetcode.com/tag/linked-list/",
+    "Linked Lists — Singly, Doubly, Circular":       "https://www.geeksforgeeks.org/linked-list-data-structure/",
     # Hashing
-    "Hashing — HashMaps and Frequency Counting":     "https://leetcode.com/tag/hash-table/",
+    "Hashing — HashMaps and Frequency Counting":     "https://www.geeksforgeeks.org/hashing-data-structure/",
     # Trees
-    "Trees — BST, DFS, BFS Traversal":              "https://leetcode.com/tag/tree/",
+    "Trees — BST, DFS, BFS Traversal":              "https://www.geeksforgeeks.org/binary-search-tree-data-structure/",
     # Graphs
-    "Graphs — BFS, DFS, Adjacency List":             "https://leetcode.com/tag/graph/",
-    "Graphs — Dijkstra, Bellman-Ford, Topological Sort": "https://leetcode.com/tag/shortest-path/",
+    "Graphs — BFS, DFS, Adjacency List":             "https://www.geeksforgeeks.org/graph-data-structure-and-algorithms/",
+    "Graphs — Dijkstra, Bellman-Ford, Topological Sort": "https://www.geeksforgeeks.org/dijkstras-shortest-path-algorithm-greedy-algo-7/",
     # Greedy
-    "Greedy Algorithms — Activity Selection, Huffman": "https://leetcode.com/tag/greedy/",
+    "Greedy Algorithms — Activity Selection, Huffman": "https://www.geeksforgeeks.org/greedy-algorithms/",
     # DP
-    "Dynamic Programming — Fibonacci, Knapsack, LCS": "https://leetcode.com/tag/dynamic-programming/",
+    "Dynamic Programming — Fibonacci, Knapsack, LCS": "https://www.geeksforgeeks.org/dynamic-programming/",
     # Advanced
     "Segment Trees and Fenwick Trees":               "https://www.geeksforgeeks.org/segment-tree-data-structure/",
-    "Tries and Suffix Arrays":                       "https://leetcode.com/tag/trie/",
+    "Tries and Suffix Arrays":                       "https://www.geeksforgeeks.org/trie-insert-and-search/",
     "Advanced Backtracking — Sudoku Solver, Word Search": "https://leetcode.com/tag/backtracking/",
     "System Design Fundamentals":                    "https://www.geeksforgeeks.org/system-design-tutorial/",
     "Competitive Programming Patterns":              "https://leetcode.com/explore/",
@@ -124,21 +132,54 @@ RESOURCE_URLS = {
 }
 
 FALLBACK_URLS = {
-    "PROBLEM":  "https://leetcode.com/problemset/",
+    "PROBLEM":  "https://www.geeksforgeeks.org/explore",
     "TOPIC":    "https://www.geeksforgeeks.org/",
-    "COURSE":   "https://www.freecodecamp.org/",
+    "COURSE":   "https://www.geeksforgeeks.org/courses",
     "MOCK":     "https://www.geeksforgeeks.org/interview-preparation/",
     "REVISION": "https://www.geeksforgeeks.org/",
-    "SETUP":    "https://www.geeksforgeeks.org/",
+    "SETUP":    "https://www.geeksforgeeks.org/how-to-set-up-java-development-environment/",
     "PROJECT":  "https://www.freecodecamp.org/news/tag/projects/",
 }
 
 def _resolve_url(title: str, task_type: str) -> str:
     """Find the best matching resource URL for a task title."""
-    # Exact match first
+    t_lower = title.lower()
+    
+    # Check exact/substring key match first
     for key, url in RESOURCE_URLS.items():
-        if key.lower() in title.lower() or title.lower() in key.lower():
+        if key.lower() in t_lower or t_lower in key.lower():
             return url
+
+    # Smart keyword rules for exact GeeksforGeeks setup & course pages
+    if "java" in t_lower and ("setup" in t_lower or "environment" in t_lower or "ide" in t_lower or "install" in t_lower):
+        return "https://www.geeksforgeeks.org/how-to-set-up-java-development-environment/"
+    if "python" in t_lower and ("setup" in t_lower or "environment" in t_lower or "ide" in t_lower):
+        return "https://www.geeksforgeeks.org/set-up-python-development-environment/"
+    if "c++" in t_lower and ("setup" in t_lower or "environment" in t_lower or "ide" in t_lower):
+        return "https://www.geeksforgeeks.org/setting-up-c-development-environment/"
+    if "java" in t_lower and ("collection" in t_lower or "stream" in t_lower or "list" in t_lower):
+        return "https://www.geeksforgeeks.org/collections-in-java-2/"
+    if "java" in t_lower:
+        return "https://www.geeksforgeeks.org/java/"
+    if "python" in t_lower:
+        return "https://www.geeksforgeeks.org/python-programming-language/"
+    if "c++" in t_lower or "cpp" in t_lower:
+        return "https://www.geeksforgeeks.org/c-plus-plus/"
+    if "git" in t_lower or "github" in t_lower:
+        return "https://www.geeksforgeeks.org/git-tutorial/"
+    if "html" in t_lower or "css" in t_lower or "web" in t_lower:
+        return "https://www.geeksforgeeks.org/web-development/"
+    if "array" in t_lower:
+        return "https://www.geeksforgeeks.org/array-data-structure/"
+    if "string" in t_lower:
+        return "https://www.geeksforgeeks.org/string-data-structure/"
+    if "sql" in t_lower or "dbms" in t_lower:
+        return "https://www.geeksforgeeks.org/dbms/"
+    if "os" in t_lower or "process" in t_lower:
+        return "https://www.geeksforgeeks.org/operating-systems/"
+    if "network" in t_lower or "tcp" in t_lower:
+        return "https://www.geeksforgeeks.org/computer-network-tutorials/"
+
     return FALLBACK_URLS.get(task_type, "https://www.geeksforgeeks.org/")
 
 # ---------------------------------------------------------------------------

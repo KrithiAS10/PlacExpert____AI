@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     // Verify the task belongs to this user's roadmap
-    if (task.phase.roadmap.userId !== user.id) {
+    if (!task.phase || task.phase.roadmap.userId !== user.id) {
       return NextResponse.json({ error: "Task does not belong to this user" }, { status: 403 });
     }
 
