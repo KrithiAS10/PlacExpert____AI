@@ -20,3 +20,6 @@ Thumbs.db
 prisma/*.db
 prisma/*.db-journal
 backend/ml/*.db
+
+# TypeScript incremental build cache (auto-generated, never commit)
+tsconfig.tsbuildinfo

@@ -20,14 +20,12 @@ import {
   VolumeX,
   Radio,
   Sliders,
-  Activity,
-  Play,
-  Square,
   AlertTriangle,
   Clock,
   MessageSquare,
-  Zap,
   Keyboard,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -37,6 +35,7 @@ import {
   type MockInterviewQuestion,
 } from "@/lib/mock-interview-data";
 
+// ─── Domain Styles ────────────────────────────────────────────────────────────
 const domainStyles = {
   dsa: { icon: Brain, color: "text-brand-purple", bg: "bg-brand-purple/10" },
   dbms: { icon: Database, color: "text-brand-blue", bg: "bg-brand-blue/10" },
@@ -44,21 +43,15 @@ const domainStyles = {
   cn: { icon: Globe, color: "text-brand-teal", bg: "bg-brand-teal/10" },
   web: { icon: Code, color: "text-brand-cyan", bg: "bg-brand-cyan/10" },
 };
-
 const fallbackDomainStyle = { icon: Brain, color: "text-brand-purple", bg: "bg-brand-purple/10" };
 
+// ─── Speech Recognition Types ─────────────────────────────────────────────────
 type SpeechRecognitionEventLike = {
   results: {
     length: number;
-    [index: number]: {
-      isFinal: boolean;
-      [index: number]: {
-        transcript: string;
-      };
-    };
+    [index: number]: { isFinal: boolean; [index: number]: { transcript: string } };
   };
 };
-
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
@@ -69,44 +62,53 @@ type SpeechRecognitionLike = {
   start: () => void;
   stop: () => void;
 };
-
 type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
 
 function getSpeechRecognition() {
   if (typeof window === "undefined") return null;
-
-  const browserWindow = window as typeof window & {
+  const w = window as typeof window & {
     SpeechRecognition?: SpeechRecognitionConstructor;
     webkitSpeechRecognition?: SpeechRecognitionConstructor;
   };
-
-  return browserWindow.SpeechRecognition ?? browserWindow.webkitSpeechRecognition ?? null;
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-type Evaluation = {
+// ─── Evaluation Types ─────────────────────────────────────────────────────────
+type MLEvaluation = {
+  source: "ml";
+  score: number;
+  overallLabel: string;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  missingConcepts: string[];
+  mentionedConcepts: string[];
+  suggestions: string[];
+  similarityScore: number;
+  conceptCoverage: number;
+  voiceStats?: { wordCount: number; wpm: number; fillerCount: number; durationSeconds: number };
+};
+
+type HeuristicEvaluation = {
+  source: "heuristic";
   score: number;
   overallLabel: string;
   summary: string;
   strengths: string[];
   improvements: string[];
   optionalCues: string[];
-  voiceStats?: {
-    wordCount: number;
-    wpm: number;
-    fillerCount: number;
-    durationSeconds: number;
-  };
+  voiceStats?: { wordCount: number; wpm: number; fillerCount: number; durationSeconds: number };
   rubric: {
     relevance: number;
-    clarityPacing?: number; // Only for voice
-    depth?: number;         // Only for text
+    depth: number;
     specificity: number;
     structure: number;
-    confidenceTone?: number; // Only for voice
-    professionalism?: number; // Only for text
+    professionalism: number;
     referenceAlignment: number;
   };
 };
+
+type Evaluation = MLEvaluation | HeuristicEvaluation;
 
 type AnswerRecord = {
   question: MockInterviewQuestion;
@@ -128,336 +130,261 @@ const createEmptySession = (): DomainSession => ({
   currentEvaluation: null,
 });
 
-function normalizeText(text: string) {
-  return text.toLowerCase().replace(/[^a-z0-9+#.\s]/g, " ");
-}
-
-const GENERIC_WORDS = new Set([
-  "about",
-  "after",
-  "also",
-  "because",
-  "been",
-  "being",
-  "between",
-  "could",
-  "during",
-  "from",
-  "have",
-  "into",
-  "more",
-  "need",
-  "should",
-  "that",
-  "their",
-  "them",
-  "then",
-  "there",
-  "these",
-  "this",
-  "through",
-  "when",
-  "where",
-  "which",
-  "with",
-  "work",
-  "would",
-  "your",
-]);
-
-const FILLER_REGEX = /\b(um+|uh+|like|actually|basically|literally|you know|sort of|kinda|i mean|right)\b/gi;
-
-const QUESTION_EXPECTATIONS: Array<{ patterns: string[]; cues: string[] }> = [
-  {
-    patterns: ["tell me about yourself"],
-    cues: ["background", "experience", "skills", "project", "interest", "goal", "role"],
-  },
-  {
-    patterns: ["why do you want", "work here"],
-    cues: ["company", "role", "values", "mission", "growth", "contribute", "skills", "culture"],
-  },
-  {
-    patterns: ["why should we hire"],
-    cues: ["skills", "experience", "impact", "team", "learn", "contribute", "strength"],
-  },
-  {
-    patterns: ["strengths and weaknesses", "strength", "weakness"],
-    cues: ["strength", "weakness", "improve", "example", "learning", "feedback"],
-  },
-  {
-    patterns: ["achievement", "professional achievement"],
-    cues: ["achieved", "led", "improved", "result", "impact", "project", "measured"],
-  },
-  {
-    patterns: ["challenging situation", "challenge"],
-    cues: ["situation", "task", "action", "result", "resolved", "learned", "communication"],
-  },
-  {
-    patterns: ["five years", "5 years"],
-    cues: ["grow", "learn", "skills", "role", "contribute", "responsibility", "goals"],
-  },
-  {
-    patterns: ["stress", "pressure"],
-    cues: ["prioritize", "organized", "calm", "deadline", "communication", "break", "focus"],
-  },
-  {
-    patterns: ["ideal work environment"],
-    cues: ["collaborative", "supportive", "communication", "ownership", "feedback", "learning"],
-  },
-];
-
-function getMeaningfulWords(text: string) {
-  return normalizeText(text)
-    .split(/\s+/)
-    .filter((word) => word.length > 3 && !GENERIC_WORDS.has(word));
-}
-
-function countCueMatches(answerWords: Set<string>, cues: string[]) {
-  return cues.filter((cue) => {
-    const cueWords = getMeaningfulWords(cue);
-    return cueWords.some((word) => answerWords.has(word) || Array.from(answerWords).some((answerWord) => answerWord.startsWith(word)));
-  }).length;
-}
-
-function getExpectedCues(question: MockInterviewQuestion) {
-  const questionText = normalizeText(question.question);
-  const patternCues =
-    QUESTION_EXPECTATIONS.find((expectation) =>
-      expectation.patterns.some((pattern) => questionText.includes(pattern))
-    )?.cues ?? [];
-
-  const questionWords = getMeaningfulWords(question.question).filter((word) => word.length > 4);
-  return Array.from(new Set([...patternCues, ...questionWords, ...question.keyConcepts.slice(0, 6)]));
-}
-
-function toPercent(score: number, max: number) {
-  return Math.round((score / max) * 100);
-}
-
-function checkGibberishAndQuality(text: string): { isInvalid: boolean; reason: string } {
+// ─── Gibberish / Quality Validator ────────────────────────────────────────────
+function checkQuality(text: string): { isInvalid: boolean; reason: string } {
   const trimmed = text.trim();
-  if (trimmed.length < 5) {
-    return { isInvalid: true, reason: "Answer is too short. Please provide a complete technical response." };
-  }
+  if (trimmed.length < 8)
+    return { isInvalid: true, reason: "Answer is too short. Please write a complete technical response." };
 
   const words = trimmed.split(/\s+/).filter(Boolean);
-  if (words.length < 3) {
-    return { isInvalid: true, reason: "Please provide a more complete response (at least 3-5 words)." };
-  }
+  if (words.length < 4)
+    return { isInvalid: true, reason: "Please provide at least a few complete sentences." };
 
-  // Check 1: Repeated word spam (e.g., "test test test test test")
+  // Repeated word spam
   const uniqueWords = new Set(words.map((w) => w.toLowerCase()));
-  if (words.length >= 5 && uniqueWords.size / words.length < 0.25) {
+  if (words.length >= 5 && uniqueWords.size / words.length < 0.25)
     return { isInvalid: true, reason: "Excessive word repetition detected. Please write a meaningful response." };
-  }
 
-  // Check 2: Keyboard pattern & random character sequence spam
-  const spamRegex = /\b(asdf|fdsa|qwerty|zxcv|ghjkl|hjkl|jkl;|12345|aaaa|bbbb|cccc|dddd|eeee|ffff|gggg|hhhh|iiii|jjjj|kkkk|llll|mmmm|nnnn|oooo|pppp|qqqq|rrrr|ssss|tttt|uuuu|vvvv|wwww|xxxx|yyyy|zzzz)\b/i;
-  let spamWords = 0;
+  // Keyboard spam patterns
+  const spamRegex = /\b(asdf|fdsa|qwerty|zxcv|ghjkl|hjkl|aaaa|bbbb|cccc|dddd|eeee|ffff|gggg|hhhh|iiii|jjjj|kkkk|llll)\b/i;
+  let spamCount = 0;
   for (const word of words) {
-    if (spamRegex.test(word) || /(.)\1{3,}/.test(word)) {
-      spamWords++;
-    }
+    if (spamRegex.test(word) || /(.)\1{3,}/.test(word)) spamCount++;
   }
-  if (spamWords / words.length > 0.2) {
-    return { isInvalid: true, reason: "Random character sequence / gibberish keystrokes detected." };
-  }
+  if (spamCount / words.length > 0.2)
+    return { isInvalid: true, reason: "Random character sequences / keyboard spam detected. Type a real answer." };
 
-  // Check 3: Vowel-to-consonant structure for pseudo-words (e.g. "dfghjkl", "qwrtpsdf")
-  let gibberishWords = 0;
+  // Vowel ratio check (gibberish words have no vowels)
+  let gibberishCount = 0;
   for (const word of words) {
     const clean = word.toLowerCase().replace(/[^a-z]/g, "");
     if (clean.length > 4) {
       const vowels = clean.match(/[aeiouy]/g)?.length ?? 0;
-      if (vowels / clean.length < 0.12) {
-        gibberishWords++;
-      }
+      if (vowels / clean.length < 0.12) gibberishCount++;
     }
   }
-  if (gibberishWords / words.length > 0.3) {
-    return { isInvalid: true, reason: "Unrecognizable non-English words or random text detected." };
-  }
+  if (gibberishCount / words.length > 0.3)
+    return { isInvalid: true, reason: "Unrecognizable non-English or random text detected. Please write in English." };
 
   return { isInvalid: false, reason: "" };
 }
 
-function evaluateAnswer(
+// ─── Heuristic Fallback Evaluator ────────────────────────────────────────────
+function normalizeText(text: string) {
+  return text.toLowerCase().replace(/[^a-z0-9+#.\s]/g, " ");
+}
+const GENERIC_WORDS = new Set([
+  "about","after","also","because","been","being","between","could","during","from","have",
+  "into","more","need","should","that","their","them","then","there","these","this",
+  "through","when","where","which","with","work","would","your",
+]);
+const FILLER_REGEX = /\b(um+|uh+|like|actually|basically|literally|you know|sort of|kinda|i mean|right)\b/gi;
+
+function getMeaningfulWords(text: string) {
+  return normalizeText(text)
+    .split(/\s+/)
+    .filter((w) => w.length > 3 && !GENERIC_WORDS.has(w));
+}
+function countCueMatches(answerWords: Set<string>, cues: string[]) {
+  return cues.filter((cue) => {
+    const cueWords = getMeaningfulWords(cue);
+    return cueWords.some(
+      (w) => answerWords.has(w) || Array.from(answerWords).some((a) => a.startsWith(w))
+    );
+  }).length;
+}
+function getExpectedCues(question: MockInterviewQuestion) {
+  const qText = normalizeText(question.question);
+  const EXPECTATIONS = [
+    { patterns: ["tell me about yourself"], cues: ["background","experience","skills","project","goal","role"] },
+    { patterns: ["why do you want","work here"], cues: ["company","role","values","mission","growth","culture"] },
+    { patterns: ["why should we hire"], cues: ["skills","experience","impact","team","contribute"] },
+    { patterns: ["strength","weakness"], cues: ["strength","weakness","improve","learning","feedback"] },
+    { patterns: ["achievement"], cues: ["achieved","led","improved","result","impact","measured"] },
+    { patterns: ["challenging","challenge"], cues: ["situation","action","result","resolved","learned"] },
+    { patterns: ["five years","5 years"], cues: ["grow","learn","skills","role","goals"] },
+    { patterns: ["stress","pressure"], cues: ["prioritize","calm","deadline","focused","organized"] },
+    { patterns: ["ideal work environment"], cues: ["collaborative","feedback","learning","ownership"] },
+  ];
+  const patternCues = EXPECTATIONS.find((e) => e.patterns.some((p) => qText.includes(p)))?.cues ?? [];
+  const questionWords = getMeaningfulWords(question.question).filter((w) => w.length > 4);
+  return Array.from(new Set([...patternCues, ...questionWords, ...question.keyConcepts.slice(0, 6)]));
+}
+function toPercent(score: number, max: number) {
+  return Math.round((score / max) * 100);
+}
+
+function buildHeuristicEval(
   question: MockInterviewQuestion,
   answer: string,
-  mode: "voice" | "text",
-  durationSeconds: number = 0
-): Evaluation {
+  mode: "text" | "voice",
+  durationSeconds = 0
+): HeuristicEvaluation {
   const words = answer.trim().split(/\s+/).filter(Boolean);
   const wordCount = words.length;
   const answerWords = new Set(getMeaningfulWords(answer));
   const expectedCues = getExpectedCues(question);
-  const referenceCueMatches = countCueMatches(answerWords, question.keyConcepts);
-  const expectedCueMatches = countCueMatches(answerWords, expectedCues);
+  const refMatches = countCueMatches(answerWords, question.keyConcepts);
+  const expMatches = countCueMatches(answerWords, expectedCues);
+  const fillerMatches = answer.match(FILLER_REGEX) ?? [];
+  const fillerCount = fillerMatches.length;
 
-  // Strict Gibberish & Quality Check
-  const validation = checkGibberishAndQuality(answer);
-  if (validation.isInvalid) {
-    return {
-      score: 0,
-      overallLabel: "Invalid Answer",
-      summary: `Response Rejected: ${validation.reason}`,
-      strengths: ["None — the response did not pass basic English & technical response validation."],
-      improvements: [validation.reason, "Provide a clear, structured response related to the question topic."],
-      optionalCues: expectedCues.slice(0, 6),
-      voiceStats: mode === "voice" ? { wordCount, wpm: 0, fillerCount: 0, durationSeconds } : undefined,
-      rubric: mode === "voice" ? {
-        relevance: 0,
-        clarityPacing: 0,
-        specificity: 0,
-        structure: 0,
-        confidenceTone: 0,
-        referenceAlignment: 0,
-      } : {
-        relevance: 0,
-        depth: 0,
-        specificity: 0,
-        structure: 0,
-        professionalism: 0,
-        referenceAlignment: 0,
-      },
-    };
-  }
+  const durationMin = durationSeconds > 0 ? durationSeconds / 60 : Math.max(0.5, wordCount / 120);
+  const wpm = Math.round(wordCount / durationMin);
 
-  const hasExample = /\b(example|for instance|project|internship|experience|situation|led|built|created|improved|resolved|achieved|handled)\b/i.test(answer);
-  const hasOutcome = /\b(result|impact|outcome|learned|improved|increased|reduced|delivered|helped|because|therefore)\b/i.test(answer);
-  const hasStructure = /\b(first|second|finally|overall|for example|in my previous|situation|task|action|result)\b/i.test(answer);
-  const hasProfessionalTone = !/\b(idk|dunno|whatever|stuff|things like that|kinda|lol)\b/i.test(answer);
+  const hasExample = /\b(example|project|internship|experience|situation|led|built|created|resolved|achieved)\b/i.test(answer);
+  const hasOutcome = /\b(result|impact|outcome|learned|improved|increased|reduced|delivered)\b/i.test(answer);
+  const hasStructure = /\b(first|second|finally|overall|for example|situation|task|action|result)\b/i.test(answer);
+  const hasTone = !/\b(idk|dunno|whatever|kinda|lol)\b/i.test(answer);
 
-  // Zero-relevance penalty for completely off-topic responses
-  const relevance = (expectedCueMatches === 0 && referenceCueMatches === 0) 
-    ? 0.2 
-    : Math.min(3, 1 + Math.min(2, expectedCueMatches * 0.45));
+  // Penalise completely off-topic (0 cue matches)
+  const relevance = expMatches === 0 && refMatches === 0
+    ? 0.2
+    : Math.min(3, 1 + Math.min(2, expMatches * 0.45));
+  const depth = Math.min(2, wordCount >= 80 ? 2 : wordCount >= 45 ? 1.5 : wordCount >= 25 ? 1 : 0.5);
   const specificity = Math.min(2, (hasExample ? 1 : 0) + (hasOutcome ? 0.75 : 0) + (/\d|%/.test(answer) ? 0.25 : 0));
-  const structure = Math.min(1.5, (hasStructure ? 0.9 : 0.4) + (wordCount >= 35 ? 0.4 : 0) + (/[.!?]/.test(answer.trim()) ? 0.2 : 0));
-  const referenceAlignment = Math.min(0.5, referenceCueMatches * 0.12);
+  const structure = Math.min(1.5, (hasStructure ? 0.9 : 0.4) + (wordCount >= 35 ? 0.4 : 0) + (/[.!?]/.test(answer) ? 0.2 : 0));
+  const professionalism = hasTone ? Math.max(0.4, 1 - (fillerCount / Math.max(wordCount, 1)) * 3) : 0.4;
+  const referenceAlignment = Math.min(0.5, refMatches * 0.12);
 
-  let score = 0;
-  let overallLabel = "";
-  let summary = "";
-  let strengths: string[] = [];
-  let improvements: string[] = [];
-  let rubric: Evaluation["rubric"];
-  let voiceStats: Evaluation["voiceStats"] | undefined;
+  const rawScore = relevance + depth + specificity + structure + professionalism + referenceAlignment;
+  const score = Math.min(10, Math.round(rawScore * 10) / 10);
+
+  const overallLabel = score >= 8 ? "Strong" : score >= 6 ? "Good" : score >= 4 ? "Developing" : "Needs Work";
+  const summary =
+    score >= 8 ? "Strong answer — clear, specific, and well-structured."
+    : score >= 6 ? "Good base. Adding a concrete example or outcome would strengthen it."
+    : score >= 4 ? "Some relevant content but needs more depth, structure, and evidence."
+    : "Too thin for an interview. Rebuild with context → action → result.";
+
+  const strengths = [
+    relevance >= 2.2 ? "Directly addresses the question." : "",
+    depth >= 1.5 ? "Good level of detail." : "",
+    specificity >= 1 ? "Includes concrete examples or outcomes." : "",
+    structure >= 1 ? "Logically structured response." : "",
+    professionalism >= 0.8 ? "Professional, interview-appropriate tone." : "",
+  ].filter(Boolean);
+
+  const improvements = [
+    relevance < 2.2 ? "Make your opening line directly address the question." : "",
+    depth < 1.5 ? "Add more context and technical depth." : "",
+    specificity < 1 ? "Include a real project, tech stack, or measured result." : "",
+    structure < 1 ? "Structure as: definition → mechanism → example." : "",
+    fillerCount > 2 ? `Cut filler words ("${fillerMatches.slice(0,2).join('", "')}") — pause instead.` : "",
+  ].filter(Boolean);
 
   const optionalCues = expectedCues
     .filter((cue) => countCueMatches(answerWords, [cue]) === 0)
     .slice(0, 6);
 
-  if (mode === "voice") {
-    const fillerMatches = answer.match(FILLER_REGEX) ?? [];
-    const fillerCount = fillerMatches.length;
-
-    const durationMinutes = durationSeconds > 0 ? durationSeconds / 60 : Math.max(0.5, wordCount / 120);
-    const wpm = Math.round(wordCount / durationMinutes);
-
-    let clarityPacing = 0.5;
-    if (wordCount >= 45 && wordCount <= 180) clarityPacing += 0.8;
-    else if (wordCount > 25) clarityPacing += 0.4;
-    if (wpm >= 100 && wpm <= 170) clarityPacing += 0.7;
-    else if (wpm >= 80 && wpm <= 190) clarityPacing += 0.4;
-    clarityPacing = Math.min(2, clarityPacing);
-
-    const fillerRatio = wordCount > 0 ? fillerCount / wordCount : 0;
-    let confidenceTone = hasProfessionalTone ? 1.0 : 0.4;
-    if (fillerRatio > 0.08) confidenceTone = Math.max(0.2, confidenceTone - 0.4);
-    else if (fillerRatio > 0.04) confidenceTone = Math.max(0.4, confidenceTone - 0.2);
-
-    const rawScore = relevance + clarityPacing + specificity + structure + confidenceTone + referenceAlignment;
-    score = Math.min(10, Math.round(rawScore * 10) / 10);
-
-    strengths = [
-      relevance >= 2.2 ? "Answer directly hits the question requirements." : "",
-      clarityPacing >= 1.5 ? `Great spoken pacing (~${wpm} WPM) and clear length.` : "",
-      specificity >= 1.0 ? "Includes concrete examples, tasks, or outcomes." : "",
-      structure >= 1.0 ? "Spoken response is logically structured and easy to follow." : "",
-      confidenceTone >= 0.8 ? "Spoken delivery reads as confident with minimal filler words." : "",
-    ].filter(Boolean);
-
-    improvements = [
-      relevance < 2.2 ? "Target the question topic more directly in your opening line." : "",
-      clarityPacing < 1.5 ? (wpm > 180 ? "Slow down slightly for better spoken clarity." : "Elaborate with a slightly more detailed explanation.") : "",
-      specificity < 1.0 ? "Include a real-world project example, tech stack, or quantitative result." : "",
-      structure < 1.0 ? "Use structured delivery (e.g. definition -> key mechanisms -> example)." : "",
-      fillerCount > 2 ? `Reduce filler words ("${fillerMatches.slice(0, 3).join('", "')}") by pausing briefly instead.` : "",
-    ].filter(Boolean);
-
-    overallLabel = score >= 8.5 ? "Interview Ready" : score >= 7 ? "Strong" : score >= 5.5 ? "Good Progress" : "Needs Practice";
-
-    summary =
-      score >= 8.5
-        ? "Outstanding spoken response! Clear articulation, relevant tech concepts, and natural delivery confidence."
-        : score >= 7
-          ? "Solid interview answer. Good subject knowledge with room for sharper examples or lower filler usage."
-          : score >= 5.5
-            ? "Good base explanation. Structure your response with a direct definition followed by a concrete example."
-            : "Needs more substance and practice. Focus on speaking in complete, structured sentences with real details.";
-
-    voiceStats = { wordCount, wpm, fillerCount, durationSeconds };
-    rubric = { relevance, clarityPacing, specificity, structure, confidenceTone, referenceAlignment };
-  } else {
-    // Text Mode
-    const depth = Math.min(2, wordCount >= 80 ? 2 : wordCount >= 45 ? 1.5 : wordCount >= 25 ? 1 : 0.5);
-    const professionalism = hasProfessionalTone ? 1 : 0.4;
-    
-    const rawScore = relevance + depth + specificity + structure + professionalism + referenceAlignment;
-    score = Math.min(10, Math.round(rawScore * 10) / 10);
-
-    strengths = [
-      relevance >= 2.2 ? "Answer stays connected to what the interviewer asked." : "",
-      depth >= 1.5 ? "Good level of detail for an interview answer." : "",
-      specificity >= 1 ? "Includes concrete experience, action, or outcome." : "",
-      structure >= 1 ? "Response is organized enough to follow easily." : "",
-      professionalism >= 1 ? "Tone is professional and interview-appropriate." : "",
-    ].filter(Boolean);
-
-    improvements = [
-      relevance < 2.2 ? "Make the answer more directly tied to the question." : "",
-      depth < 1.5 ? "Add a little more context instead of giving a short generic line." : "",
-      specificity < 1 ? "Include a real example, project, measurable result, or lesson learned." : "",
-      structure < 1 ? "Use a simple structure such as context, action, and result." : "",
-      professionalism < 1 ? "Use more formal wording for interview settings." : "",
-    ].filter(Boolean);
-
-    overallLabel = score >= 8 ? "Strong" : score >= 6 ? "Good" : score >= 4 ? "Developing" : "Needs Work";
-
-    summary =
-      score >= 8
-        ? "This is a strong professional answer. Keep it natural, but preserve the clarity and evidence."
-        : score >= 6
-          ? "This is a good base answer. A stronger example or clearer outcome would make it more convincing."
-          : score >= 4
-            ? "This answer has potential, but it needs more context, structure, and evidence."
-            : "This is too thin for an interview. Build it into a complete answer with context, action, and result.";
-
-    rubric = { relevance, depth, specificity, structure, professionalism, referenceAlignment };
-  }
-
   return {
+    source: "heuristic",
     score,
     overallLabel,
     summary,
-    strengths: strengths.length ? strengths : ["Attempted the question and built a solid base."],
-    improvements: improvements.length ? improvements : ["Polish delivery and keep the answer concise."],
+    strengths: strengths.length ? strengths : ["Attempted the question — build on this."],
+    improvements: improvements.length ? improvements : ["Polish clarity and add a concrete technical example."],
     optionalCues,
-    voiceStats,
-    rubric,
+    voiceStats: mode === "voice" ? { wordCount, wpm, fillerCount, durationSeconds } : undefined,
+    rubric: { relevance, depth, specificity, structure, professionalism, referenceAlignment },
   };
 }
 
+// ─── ML Evaluation via API ────────────────────────────────────────────────────
+async function fetchMLEvaluation(
+  domain: string,
+  question: string,
+  answer: string,
+  mode: "text" | "voice",
+  durationSeconds = 0
+): Promise<Evaluation> {
+  const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
+  const fillerMatches = answer.match(FILLER_REGEX) ?? [];
+  const fillerCount = fillerMatches.length;
+  const durationMin = durationSeconds > 0 ? durationSeconds / 60 : Math.max(0.5, wordCount / 120);
+  const wpm = Math.round(wordCount / durationMin);
+
+  try {
+    const res = await fetch("/api/mock-interview/evaluate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain, question, answer }),
+    });
+
+    const data = await res.json();
+
+    // If ML returned an error, fall through to heuristic
+    if (data.error === "ml_unavailable" || data.interview_score === null) {
+      throw new Error("ml_unavailable");
+    }
+
+    const score = Math.min(10, Math.max(0, Math.round(Number(data.interview_score) * 10) / 10));
+    const similarity = Number(data.similarity_score ?? 0);
+    const coverage = Number(data.concept_coverage ?? 0);
+
+    const overallLabel =
+      score >= 8.5 ? "Excellent" : score >= 7 ? "Strong" : score >= 5 ? "Good" : score >= 3 ? "Developing" : "Needs Work";
+
+    const summary =
+      score >= 8.5 ? "Outstanding answer with high semantic alignment to the expected response."
+      : score >= 7 ? "Strong answer — clearly explained with good concept coverage."
+      : score >= 5 ? "Decent understanding shown. Improve with more depth and missing concepts."
+      : score >= 3 ? "Partial answer. Several key concepts are missing or unclear."
+      : "Answer does not meaningfully address the question. Review the topic and try again.";
+
+    const mlImprovements = [];
+    if (data.missing_concepts?.length) {
+      mlImprovements.push(`Cover these missing concepts: ${data.missing_concepts.slice(0, 4).join(", ")}.`);
+    }
+    if (similarity < 0.5) {
+      mlImprovements.push("Your answer has low semantic similarity to the expected response — revisit the topic.");
+    }
+    if (coverage < 40) {
+      mlImprovements.push("Less than 40% of key concepts were mentioned. Study the core definitions.");
+    }
+
+    const mlStrengths: string[] = [...(data.strengths ?? [])];
+    if (data.mentioned_concepts?.length) {
+      mlStrengths.push(`Correctly mentioned: ${data.mentioned_concepts.slice(0, 4).join(", ")}.`);
+    }
+
+    return {
+      source: "ml",
+      score,
+      overallLabel,
+      summary,
+      strengths: mlStrengths.length ? mlStrengths : ["You attempted the question."],
+      improvements: mlImprovements.length ? mlImprovements : ["Polish your answer and add concrete examples."],
+      missingConcepts: data.missing_concepts ?? [],
+      mentionedConcepts: data.mentioned_concepts ?? [],
+      suggestions: data.suggestions ?? [],
+      similarityScore: similarity,
+      conceptCoverage: coverage,
+      voiceStats: mode === "voice" ? { wordCount, wpm, fillerCount, durationSeconds } : undefined,
+    };
+  } catch {
+    // Python model unavailable — fall back to heuristic silently
+    return buildHeuristicEval(
+      { id: "", question, idealAnswer: "", keyConcepts: [] },
+      answer,
+      mode,
+      durationSeconds
+    );
+  }
+}
+
+// ─── Page Component ───────────────────────────────────────────────────────────
 export default function MockInterviewPage() {
-  const [interviewMode, setInterviewMode] = useState<"text" | "voice">("voice");
+  const [interviewMode, setInterviewMode] = useState<"text" | "voice">("text");
   const [domains, setDomains] = useState<MockInterviewDomain[]>(mockInterviewDomains);
   const [selectedDomainId, setSelectedDomainId] = useState<MockInterviewDomainId>("dsa");
   const [sessions, setSessions] = useState<Record<string, DomainSession>>({});
-  const [datasetSource, setDatasetSource] = useState("Built-in question dataset");
+  const [datasetSource, setDatasetSource] = useState("Built-in sample questions");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  // Voice & Audio States
+  // Voice states
   const [isRecording, setIsRecording] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true);
@@ -468,64 +395,43 @@ export default function MockInterviewPage() {
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Speech Recognition Availability
   const speechSupported = useMemo(() => Boolean(getSpeechRecognition()), []);
 
-  // Fetch Dataset
+  // ─── Dataset loader ──────────────────────────────────────────────────────
   const loadCsvDataset = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch(`/api/mock-interview/questions?refresh=${Date.now()}`, {
-        cache: "no-store",
-      });
+      const response = await fetch(`/api/mock-interview/questions?refresh=${Date.now()}`, { cache: "no-store" });
       if (!response.ok) return;
-
-      const data = (await response.json()) as {
-        source?: string;
-        domains?: MockInterviewDomain[];
-      };
-      const csvDomains = data.domains?.filter((domain) => domain.questions.length > 0) ?? [];
-
-      if (csvDomains.length === 0) return;
-
+      const data = (await response.json()) as { source?: string; domains?: MockInterviewDomain[] };
+      const csvDomains = data.domains?.filter((d) => d.questions.length > 0) ?? [];
+      if (!csvDomains.length) return;
       setDomains(csvDomains);
-      setSelectedDomainId((currentDomainId) =>
-        csvDomains.some((domain) => domain.id === currentDomainId) ? currentDomainId : csvDomains[0].id
-      );
+      setSelectedDomainId((cur) => (csvDomains.some((d) => d.id === cur) ? cur : csvDomains[0].id));
       setDatasetSource(data.source ? "CSV QA Dataset" : "CSV dataset");
-      setSessions((currentSessions) => {
-        const nextSessions: Record<string, DomainSession> = {};
-
+      setSessions((cur) => {
+        const next: Record<string, DomainSession> = {};
         csvDomains.forEach((domain) => {
-          const existingSession = currentSessions[domain.id] ?? createEmptySession();
-          nextSessions[domain.id] = {
-            ...existingSession,
-            questionIndex: Math.min(existingSession.questionIndex, domain.questions.length - 1),
-          };
+          const existing = cur[domain.id] ?? createEmptySession();
+          next[domain.id] = { ...existing, questionIndex: Math.min(existing.questionIndex, domain.questions.length - 1) };
         });
-
-        return nextSessions;
+        return next;
       });
-    } catch (error) {
-      console.error("Failed to fetch mock interview dataset:", error);
+    } catch (e) {
+      console.error("Failed to fetch dataset:", e);
     } finally {
       setIsRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      loadCsvDataset();
-    }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
+    const id = window.setTimeout(() => loadCsvDataset(), 0);
+    return () => window.clearTimeout(id);
   }, [loadCsvDataset]);
 
+  // ─── Derived state ────────────────────────────────────────────────────────
   const selectedDomain = useMemo(
-    () => domains.find((domain) => domain.id === selectedDomainId) ?? domains[0],
+    () => domains.find((d) => d.id === selectedDomainId) ?? domains[0],
     [domains, selectedDomainId]
   );
   const selectedSession = sessions[selectedDomainId] ?? createEmptySession();
@@ -533,36 +439,107 @@ export default function MockInterviewPage() {
   const currentQuestion = selectedDomain.questions[questionIndex];
   const records = selectedSession.records;
   const currentEvaluation = selectedSession.currentEvaluation;
+  const answer = transcript || selectedSession.answer;
+  const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
+  const fillerCount = (answer.match(FILLER_REGEX) ?? []).length;
+  const wpm = recordingSeconds > 0 ? Math.round(wordCount / (recordingSeconds / 60)) : 0;
+  const averageScore = records.length
+    ? (records.reduce((s, r) => s + r.evaluation.score, 0) / records.length).toFixed(1)
+    : "0.0";
+  const progress = Math.round((records.length / selectedDomain.questions.length) * 100);
+  const remainingQuestions = selectedDomain.questions.length - records.length;
+  const latestScore = records.at(-1)?.evaluation.score.toFixed(1) ?? "0.0";
+  const isLastQuestion = questionIndex === selectedDomain.questions.length - 1;
+  const hasAnsweredCurrent = Boolean(currentEvaluation);
+  const sessionComplete = hasAnsweredCurrent && isLastQuestion;
 
-  // Text-To-Speech Synthesizer (AI Interviewer Speaking)
+  // ─── Session helpers ──────────────────────────────────────────────────────
+  const updateSelectedSession = useCallback(
+    (updater: (s: DomainSession) => DomainSession) => {
+      setSessions((cur) => ({
+        ...cur,
+        [selectedDomainId]: updater(cur[selectedDomainId] ?? createEmptySession()),
+      }));
+    },
+    [selectedDomainId]
+  );
+
+  const setAnswerText = (text: string) => {
+    setTranscript(text);
+    updateSelectedSession((s) => ({ ...s, answer: text }));
+    setValidationError(null);
+  };
+
+  const selectDomain = (domainId: MockInterviewDomainId) => {
+    stopRecording(); stopSpeaking();
+    setSelectedDomainId(domainId);
+    setTranscript(""); setRecordingSeconds(0); setValidationError(null);
+    setSessions((cur) => ({ ...cur, [domainId]: cur[domainId] ?? createEmptySession() }));
+  };
+
+  const nextQuestion = () => {
+    stopRecording(); stopSpeaking();
+    setTranscript(""); setRecordingSeconds(0); setValidationError(null);
+    const nextIndex = Math.min(questionIndex + 1, selectedDomain.questions.length - 1);
+    updateSelectedSession((s) => ({ ...s, questionIndex: nextIndex, answer: "", currentEvaluation: null }));
+  };
+
+  const restartSession = () => {
+    stopRecording(); stopSpeaking();
+    setTranscript(""); setRecordingSeconds(0); setValidationError(null);
+    updateSelectedSession(() => createEmptySession());
+  };
+
+  // ─── Submit ───────────────────────────────────────────────────────────────
+  const submitAnswer = async () => {
+    const text = answer.trim();
+    if (!text || !currentQuestion) return;
+
+    // Step 1: Client-side quality gate
+    const validation = checkQuality(text);
+    if (validation.isInvalid) {
+      setValidationError(validation.reason);
+      return;
+    }
+    setValidationError(null);
+    setIsEvaluating(true);
+    stopRecording(); stopSpeaking();
+
+    try {
+      // Step 2: ML evaluation via Python (with heuristic fallback)
+      const evaluation = await fetchMLEvaluation(
+        selectedDomain.name,
+        currentQuestion.question,
+        text,
+        interviewMode,
+        recordingSeconds
+      );
+
+      updateSelectedSession((s) => ({
+        ...s,
+        answer: text,
+        currentEvaluation: evaluation,
+        records: [...s.records, { question: currentQuestion, answer: text, evaluation }],
+      }));
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  // ─── TTS ──────────────────────────────────────────────────────────────────
   const speakQuestion = useCallback(
-    (textToSpeak?: string) => {
-      if (interviewMode !== "voice") return; // Only speak in voice mode
-      if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-
+    (text?: string) => {
+      if (interviewMode !== "voice" || typeof window === "undefined" || !("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
-
-      const text = textToSpeak ?? currentQuestion?.question;
-      if (!text) return;
-
-      const utterance = new SpeechSynthesisUtterance(text);
+      const utterance = new SpeechSynthesisUtterance(text ?? currentQuestion?.question ?? "");
       utterance.rate = speechPace;
-      utterance.pitch = 1.0;
       utterance.lang = "en-US";
-
       const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find(
-        (voice) => voice.lang.startsWith("en") && (voice.name.includes("Natural") || voice.name.includes("Google") || voice.name.includes("Samantha") || voice.name.includes("Daniel"))
-      ) ?? voices.find((voice) => voice.lang.startsWith("en"));
-
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      }
-
+      const preferred = voices.find((v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Natural"))) ?? voices.find((v) => v.lang.startsWith("en"));
+      if (preferred) utterance.voice = preferred;
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
-
       window.speechSynthesis.speak(utterance);
     },
     [currentQuestion?.question, speechPace, interviewMode]
@@ -577,13 +554,8 @@ export default function MockInterviewPage() {
 
   useEffect(() => {
     if (interviewMode === "voice" && autoSpeak && currentQuestion) {
-      const timer = setTimeout(() => {
-        speakQuestion(currentQuestion.question);
-      }, 400);
-      return () => {
-        clearTimeout(timer);
-        stopSpeaking();
-      };
+      const t = setTimeout(() => speakQuestion(currentQuestion.question), 450);
+      return () => { clearTimeout(t); stopSpeaking(); };
     }
   }, [currentQuestion?.id, autoSpeak, speakQuestion, stopSpeaking, interviewMode]);
 
@@ -591,220 +563,89 @@ export default function MockInterviewPage() {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       stopSpeaking();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
+      try { recognitionRef.current?.stop(); } catch {}
     };
   }, [stopSpeaking]);
 
+  // ─── Microphone ───────────────────────────────────────────────────────────
   const startRecording = () => {
-    setSpeechError(null);
-    stopSpeaking();
-
+    setSpeechError(null); stopSpeaking();
     const Recognition = getSpeechRecognition();
     if (!Recognition) {
-      setSpeechError("Speech recognition is not supported in your browser. You can still type your response below.");
+      setSpeechError("Speech recognition not supported in this browser. Type your answer instead.");
       return;
     }
-
     try {
-      const recorder = new Recognition();
-      recorder.continuous = true;
-      recorder.interimResults = true;
-      recorder.lang = "en-US";
-
-      recorder.onresult = (event) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
-
-        for (let i = 0; i < event.results.length; i += 1) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalTranscript += result[0].transcript + " ";
-          } else {
-            interimTranscript += result[0].transcript;
-          }
+      const rec = new Recognition();
+      rec.continuous = true; rec.interimResults = true; rec.lang = "en-US";
+      rec.onresult = (e) => {
+        let final = ""; let interim = "";
+        for (let i = 0; i < e.results.length; i++) {
+          if (e.results[i].isFinal) final += e.results[i][0].transcript + " ";
+          else interim += e.results[i][0].transcript;
         }
-
-        const updatedText = (finalTranscript + interimTranscript).trim();
-        if (updatedText) {
-          setTranscript(updatedText);
-          updateSelectedSession((session) => ({
-            ...session,
-            answer: updatedText,
-          }));
-        }
+        const updated = (final + interim).trim();
+        if (updated) setAnswerText(updated);
       };
-
-      recorder.onerror = (event) => {
-        console.warn("Speech recognition error:", event.error);
-        if (event.error === "not-allowed") {
-          setSpeechError("Microphone access was denied. Please check browser permissions.");
-        }
+      rec.onerror = (e) => {
+        if (e.error === "not-allowed") setSpeechError("Microphone access denied. Check browser permissions.");
       };
-
-      recorder.onend = () => {
-        setIsRecording(false);
-        if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      };
-
-      recorder.start();
-      recognitionRef.current = recorder;
-      setIsRecording(true);
-      setRecordingSeconds(0);
-
+      rec.onend = () => { setIsRecording(false); if (recordingTimerRef.current) clearInterval(recordingTimerRef.current); };
+      rec.start();
+      recognitionRef.current = rec;
+      setIsRecording(true); setRecordingSeconds(0);
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => prev + 1);
-      }, 1000);
-    } catch (error) {
-      console.error("Failed to start speech recognition:", error);
-      setSpeechError("Could not launch microphone. Please try again or type directly.");
+      recordingTimerRef.current = setInterval(() => setRecordingSeconds((p) => p + 1), 1000);
+    } catch (err) {
+      setSpeechError("Could not start microphone. Try again or type below.");
+      console.error(err);
     }
   };
 
-  const stopRecording = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-    }
+  const stopRecording = useCallback(() => {
+    try { recognitionRef.current?.stop(); } catch {}
     setIsRecording(false);
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-  };
+  }, []);
 
-  const updateSelectedSession = (updater: (session: DomainSession) => DomainSession) => {
-    setSessions((currentSessions) => {
-      const currentSession = currentSessions[selectedDomainId] ?? createEmptySession();
-      return {
-        ...currentSessions,
-        [selectedDomainId]: updater(currentSession),
-      };
-    });
-  };
-
-  const selectDomain = (domainId: MockInterviewDomainId) => {
-    stopRecording();
-    stopSpeaking();
-    setSelectedDomainId(domainId);
-    setTranscript("");
-    setRecordingSeconds(0);
-    setSessions((currentSessions) => ({
-      ...currentSessions,
-      [domainId]: currentSessions[domainId] ?? createEmptySession(),
-    }));
-  };
-
-  const submitAnswer = () => {
-    const currentAnswer = (transcript || selectedSession.answer).trim();
-    if (!currentAnswer || !currentQuestion) return;
-
-    stopRecording();
-    stopSpeaking();
-
-    const evaluation = evaluateAnswer(currentQuestion, currentAnswer, interviewMode, recordingSeconds);
-    updateSelectedSession((session) => ({
-      ...session,
-      answer: currentAnswer,
-      currentEvaluation: evaluation,
-      records: [
-        ...session.records,
-        {
-          question: currentQuestion,
-          answer: currentAnswer,
-          evaluation,
-        },
-      ],
-    }));
-  };
-
-  const nextQuestion = () => {
-    stopRecording();
-    stopSpeaking();
-    setTranscript("");
-    setRecordingSeconds(0);
-    const nextIndex = Math.min(questionIndex + 1, selectedDomain.questions.length - 1);
-    updateSelectedSession((session) => ({
-      ...session,
-      questionIndex: nextIndex,
-      answer: "",
-      currentEvaluation: null,
-    }));
-  };
-
-  const restartSession = () => {
-    stopRecording();
-    stopSpeaking();
-    setTranscript("");
-    setRecordingSeconds(0);
-    updateSelectedSession(() => createEmptySession());
-  };
-
-  // Stats
-  const averageScore = records.length
-    ? (records.reduce((total, record) => total + record.evaluation.score, 0) / records.length).toFixed(1)
-    : "0.0";
-  const progress = Math.round((records.length / selectedDomain.questions.length) * 100);
-  const remainingQuestions = selectedDomain.questions.length - records.length;
-  const latestScore = records.at(-1)?.evaluation.score.toFixed(1) ?? "0.0";
-  const isLastQuestion = questionIndex === selectedDomain.questions.length - 1;
-  const hasAnsweredCurrent = Boolean(currentEvaluation);
-  const sessionComplete = hasAnsweredCurrent && isLastQuestion;
-
-  const currentText = transcript || selectedSession.answer;
-  const wordCount = currentText.trim().split(/\s+/).filter(Boolean).length;
-  const fillerCount = (currentText.match(FILLER_REGEX) ?? []).length;
-  const wpm = recordingSeconds > 0 ? Math.round((wordCount / (recordingSeconds / 60))) : 0;
-
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-[calc(100vh-8rem)] space-y-6">
-      {/* Top Bar Header */}
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-white">Mock Interview</h1>
             <span className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-              interviewMode === "voice" 
-                ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-cyan" 
+              interviewMode === "voice"
+                ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-cyan"
                 : "bg-brand-purple/10 border-brand-purple/20 text-brand-purple"
             }`}>
-              {interviewMode === "voice" ? (
-                <><Radio className="h-3 w-3 animate-pulse text-brand-cyan" /> Voice Mode</>
-              ) : (
-                <><Keyboard className="h-3 w-3 text-brand-purple" /> Text Mode</>
-              )}
+              {interviewMode === "voice"
+                ? <><Radio className="h-3 w-3 animate-pulse" /> Voice</>
+                : <><Keyboard className="h-3 w-3" /> Text</>}
             </span>
           </div>
           <p className="text-sm text-gray-400">
-            Practice technical and behavioral interviews with comprehensive rubric feedback.
+            AI-evaluated interview practice — powered by Sentence Transformers with gibberish detection.
           </p>
         </div>
-
         <div className="flex items-center gap-3">
-          <div className="flex bg-dark-card rounded-lg border border-dark-border p-1">
+          {/* Mode Toggle */}
+          <div className="flex bg-dark-card rounded-lg border border-dark-border p-1 gap-0.5">
             <button
-              onClick={() => {
-                setInterviewMode("text");
-                stopRecording();
-                stopSpeaking();
-              }}
+              onClick={() => { setInterviewMode("text"); stopRecording(); stopSpeaking(); setValidationError(null); }}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
-                interviewMode === "text" 
-                  ? "bg-white/10 text-white shadow-sm" 
-                  : "text-gray-400 hover:text-gray-200"
+                interviewMode === "text" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"
               }`}
             >
               <Keyboard className="h-3.5 w-3.5" />
               Text
             </button>
             <button
-              onClick={() => setInterviewMode("voice")}
+              onClick={() => { setInterviewMode("voice"); setValidationError(null); }}
               className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
-                interviewMode === "voice" 
-                  ? "bg-brand-cyan/20 text-brand-cyan shadow-sm" 
-                  : "text-gray-400 hover:text-gray-200"
+                interviewMode === "voice" ? "bg-brand-cyan/20 text-brand-cyan" : "text-gray-400 hover:text-gray-200"
               }`}
             >
               <Mic className="h-3.5 w-3.5" />
@@ -814,7 +655,7 @@ export default function MockInterviewPage() {
           <button
             onClick={loadCsvDataset}
             disabled={isRefreshing}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-dark-border bg-dark-card px-3 text-sm font-medium text-gray-300 transition-colors hover:text-white"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-dark-border bg-dark-card px-3 text-sm font-medium text-gray-300 transition-colors hover:text-white disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
             Refresh
@@ -823,27 +664,24 @@ export default function MockInterviewPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-        {/* Left Sidebar: Domains & Controls */}
+        {/* ─── Left Sidebar ─── */}
         <aside className="space-y-6">
           <section className="glass-card space-y-4 rounded-2xl p-5">
             <h2 className="text-sm font-bold text-white flex items-center justify-between">
-              <span>Select Domain</span>
-              <span className="text-[10px] text-gray-500 uppercase tracking-wider">CSV Data</span>
+              <span>Domain</span>
+              <span className="text-[10px] text-gray-500 uppercase tracking-wider">CSV Dataset</span>
             </h2>
             <div className="space-y-2">
               {domains.map((domain) => {
                 const style = domainStyles[domain.id as keyof typeof domainStyles] ?? fallbackDomainStyle;
                 const Icon = style.icon;
                 const isSelected = selectedDomainId === domain.id;
-
                 return (
                   <button
                     key={domain.id}
                     onClick={() => selectDomain(domain.id)}
                     className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                      isSelected
-                        ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20"
-                        : "border-dark-border bg-transparent hover:border-white/10"
+                      isSelected ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20" : "border-dark-border hover:border-white/10"
                     }`}
                   >
                     <span className="flex min-w-0 items-center gap-3">
@@ -864,46 +702,30 @@ export default function MockInterviewPage() {
             </div>
           </section>
 
-          {/* Voice Preferences - Only show in Voice Mode */}
+          {/* Voice Settings (only in voice mode) */}
           {interviewMode === "voice" && (
             <section className="glass-card rounded-2xl p-5 space-y-4">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Sliders className="h-4 w-4 text-brand-cyan" />
                 Voice Settings
               </h2>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-300">Auto-Read Question</span>
-                  <button
-                    onClick={() => setAutoSpeak(!autoSpeak)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      autoSpeak ? "bg-brand-cyan" : "bg-dark-border"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-dark-bg transition-transform ${
-                        autoSpeak ? "translate-x-6" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-300">Auto-Read Question</span>
+                <button
+                  onClick={() => setAutoSpeak(!autoSpeak)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${autoSpeak ? "bg-brand-cyan" : "bg-dark-border"}`}
+                >
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-dark-bg transition-transform ${autoSpeak ? "translate-x-6" : "translate-x-1"}`} />
+                </button>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-gray-300">
+                  <span>Voice Speed</span>
+                  <span className="font-mono text-brand-cyan">{speechPace.toFixed(1)}x</span>
                 </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-gray-300">
-                    <span>Voice Speed</span>
-                    <span className="font-mono text-brand-cyan">{speechPace.toFixed(1)}x</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.8"
-                    max="1.3"
-                    step="0.1"
-                    value={speechPace}
-                    onChange={(e) => setSpeechPace(parseFloat(e.target.value))}
-                    className="w-full accent-brand-cyan cursor-pointer"
-                  />
-                </div>
+                <input type="range" min="0.8" max="1.3" step="0.1" value={speechPace}
+                  onChange={(e) => setSpeechPace(parseFloat(e.target.value))}
+                  className="w-full accent-brand-cyan cursor-pointer" />
               </div>
             </section>
           )}
@@ -913,23 +735,19 @@ export default function MockInterviewPage() {
             <h2 className="mb-4 text-sm font-bold text-white">Session Stats</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-xs text-gray-500">Source</span>
+                <span className="text-xs text-gray-500">Dataset</span>
                 <span className="truncate text-right text-xs text-gray-300">{datasetSource}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Attended</span>
-                <span className="font-mono text-xs text-white">
-                  {records.length} / {selectedDomain.questions.length}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Remaining</span>
-                <span className="font-mono text-xs text-white">{remainingQuestions}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Latest Score</span>
-                <span className="text-xs font-bold text-white">{latestScore}/10</span>
-              </div>
+              {[
+                ["Attended", `${records.length} / ${selectedDomain.questions.length}`],
+                ["Remaining", String(remainingQuestions)],
+                ["Latest Score", `${latestScore}/10`],
+              ].map(([label, value]) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">{label}</span>
+                  <span className="font-mono text-xs text-white">{value}</span>
+                </div>
+              ))}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500">Average Score</span>
                 <span className="text-xs font-bold text-brand-cyan">{averageScore}/10</span>
@@ -940,7 +758,7 @@ export default function MockInterviewPage() {
                   <span className="text-white">{progress}%</span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-dark-bg">
-                  <div className="h-full bg-brand-cyan shadow-glow-cyan" style={{ width: `${progress}%` }} />
+                  <div className="h-full bg-brand-cyan shadow-glow-cyan transition-all" style={{ width: `${progress}%` }} />
                 </div>
               </div>
               <button
@@ -954,8 +772,9 @@ export default function MockInterviewPage() {
           </section>
         </aside>
 
-        {/* Center Workspace: Interviewer */}
+        {/* ─── Main Panel ─── */}
         <main className="glass-card flex min-h-[640px] flex-col overflow-hidden rounded-3xl border-dark-border/50">
+          {/* Top bar */}
           <div className="border-b border-dark-border bg-white/5 p-5">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -963,37 +782,27 @@ export default function MockInterviewPage() {
                   <Target className="h-5 w-5 text-brand-cyan" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-white">{selectedDomain.name} Session</p>
+                  <p className="text-sm font-bold text-white">{selectedDomain.name} Interview</p>
                   <p className="text-[10px] font-medium uppercase tracking-widest text-gray-500">
                     Question {questionIndex + 1} of {selectedDomain.questions.length}
                   </p>
                 </div>
               </div>
-
-              {/* Status Indicator & TTS Button (Only in Voice Mode) */}
               {interviewMode === "voice" && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={isSpeaking ? stopSpeaking : () => speakQuestion()}
-                    className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs font-bold transition-all ${
-                      isSpeaking
-                        ? "border-brand-purple/50 bg-brand-purple/20 text-brand-purple shadow-glow-purple"
-                        : "border-dark-border bg-dark-card text-gray-200 hover:text-white"
-                    }`}
-                  >
-                    {isSpeaking ? (
-                      <>
-                        <VolumeX className="h-4 w-4 text-brand-purple animate-pulse" />
-                        Pause AI Voice
-                      </>
-                    ) : (
-                      <>
-                        <Volume2 className="h-4 w-4 text-brand-cyan" />
-                        Listen to Question
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={isSpeaking ? stopSpeaking : () => speakQuestion()}
+                  className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs font-bold transition-all ${
+                    isSpeaking
+                      ? "border-brand-purple/50 bg-brand-purple/20 text-brand-purple"
+                      : "border-dark-border bg-dark-card text-gray-200 hover:text-white"
+                  }`}
+                >
+                  {isSpeaking ? (
+                    <><VolumeX className="h-4 w-4 animate-pulse" /> Stop AI Voice</>
+                  ) : (
+                    <><Volume2 className="h-4 w-4 text-brand-cyan" /> Listen</>
+                  )}
+                </button>
               )}
             </div>
           </div>
@@ -1005,52 +814,48 @@ export default function MockInterviewPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
+                className="space-y-5"
               >
-                {/* Interviewer Question Box */}
+                {/* Question Card */}
                 <div className="relative overflow-hidden rounded-2xl border border-dark-border bg-dark-card p-5">
-                  {isSpeaking && interviewMode === "voice" && (
-                    <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-brand-purple via-brand-cyan to-brand-purple animate-pulse" />
-                  )}
-
+                  {isSpeaking && <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-purple via-brand-cyan to-brand-purple animate-pulse" />}
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-brand-cyan">
                       <Sparkles className="h-3.5 w-3.5" />
-                      AI Technical Interviewer
+                      Interviewer Question
                     </div>
-
-                    {isSpeaking && interviewMode === "voice" && (
-                      <div className="flex items-center gap-1 h-1">
-                        <span className="text-[10px] font-mono text-brand-purple animate-pulse mr-1">AI Speaking...</span>
-                        {[0, 1, 2, 3, 4].map((bar) => (
-                          <motion.span
-                            key={bar}
-                            animate={{ height: ["4px", "16px", "6px", "14px", "4px"] }}
+                    {isSpeaking && (
+                      <div className="flex items-center gap-0.5">
+                        {[0,1,2,3,4].map((bar) => (
+                          <motion.span key={bar}
+                            animate={{ height: ["4px","16px","6px","14px","4px"] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: bar * 0.15 }}
-                            className="w-1 bg-brand-purple rounded-full inline-block"
+                            className="w-1 rounded-full bg-brand-purple inline-block"
                           />
                         ))}
                       </div>
                     )}
                   </div>
-
                   <p className="text-base font-semibold leading-7 text-white">{currentQuestion.question}</p>
-                  
                   <div className="mt-4 flex flex-wrap gap-2">
                     {currentQuestion.difficulty && (
-                      <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-gray-300">
-                        {currentQuestion.difficulty}
-                      </span>
+                      <span className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-gray-300">{currentQuestion.difficulty}</span>
                     )}
                     {currentQuestion.intent && (
-                      <span className="rounded-full bg-brand-cyan/10 px-2.5 py-1 text-[11px] text-brand-cyan">
-                        {currentQuestion.intent}
-                      </span>
+                      <span className="rounded-full bg-brand-cyan/10 px-2.5 py-1 text-[11px] text-brand-cyan">{currentQuestion.intent}</span>
                     )}
                   </div>
                 </div>
 
-                {/* Speech Error Alert */}
+                {/* Validation Error */}
+                {validationError && (
+                  <div className="flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{validationError}</span>
+                  </div>
+                )}
+
+                {/* Speech Error */}
                 {speechError && interviewMode === "voice" && (
                   <div className="flex items-center gap-2 rounded-xl border border-brand-orange/30 bg-brand-orange/10 p-3 text-xs text-brand-orange">
                     <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -1058,80 +863,57 @@ export default function MockInterviewPage() {
                   </div>
                 )}
 
-                {/* Input Area */}
+                {/* Answer Input */}
                 <div className="rounded-2xl border border-dark-border bg-dark-bg/60 p-5 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <label className="text-sm font-bold text-white flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-brand-cyan" />
                       {interviewMode === "voice" ? "Your Spoken Transcript" : "Your Answer"}
                     </label>
-
-                    {/* Live Voice Metrics during recording/typing (Only in Voice Mode) */}
+                    {/* Live metrics in voice mode */}
                     {interviewMode === "voice" && (
                       <div className="flex items-center gap-3 text-xs text-gray-400">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5 text-gray-500" />
                           <span className="font-mono text-gray-200">
-                            {Math.floor(recordingSeconds / 60).toString().padStart(2, "0")}:
-                            {(recordingSeconds % 60).toString().padStart(2, "0")}
+                            {String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:{String(recordingSeconds % 60).padStart(2, "0")}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-gray-500">Words:</span>
-                          <span className="font-mono text-white">{wordCount}</span>
-                        </div>
-                        {wpm > 0 && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-500">Pace:</span>
-                            <span className="font-mono text-brand-cyan">{wpm} WPM</span>
-                          </div>
-                        )}
-                        {fillerCount > 0 && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-gray-500">Fillers:</span>
-                            <span className="font-mono text-brand-orange">{fillerCount}</span>
-                          </div>
-                        )}
+                        <span className="text-gray-500">Words: <span className="font-mono text-white">{wordCount}</span></span>
+                        {wpm > 0 && <span className="text-gray-500">Pace: <span className="font-mono text-brand-cyan">{wpm} WPM</span></span>}
+                        {fillerCount > 0 && <span className="text-gray-500">Fillers: <span className="font-mono text-brand-orange">{fillerCount}</span></span>}
                       </div>
                     )}
                   </div>
 
                   <textarea
-                    id="mock-answer-transcript"
-                    value={transcript || selectedSession.answer}
-                    onChange={(event) => {
-                      const text = event.target.value;
-                      setTranscript(text);
-                      updateSelectedSession((session) => ({
-                        ...session,
-                        answer: text,
-                      }));
-                    }}
-                    disabled={hasAnsweredCurrent}
+                    id="mock-answer"
+                    value={answer}
+                    onChange={(e) => setAnswerText(e.target.value)}
+                    disabled={hasAnsweredCurrent || isEvaluating}
                     placeholder={
                       interviewMode === "voice"
                         ? isRecording
-                          ? "Listening to your voice... Speak clearly into your microphone."
-                          : "Click 'Start Voice Recording' to speak your answer, or type directly..."
-                        : "Type a structured answer: definition, key points, tradeoffs, and example."
+                          ? "Listening… speak clearly into your microphone."
+                          : "Click 'Start Recording' or type your answer here."
+                        : "Type a structured answer: definition → key concepts → tradeoffs → real example."
                     }
-                    className={`min-h-48 w-full resize-none rounded-xl border p-4 text-sm leading-6 outline-none transition-all placeholder:text-gray-600 ${
-                      isRecording && interviewMode === "voice"
-                        ? "border-brand-cyan/60 bg-brand-cyan/5 text-white ring-1 ring-brand-cyan/30"
+                    className={`min-h-52 w-full resize-none rounded-xl border p-4 text-sm leading-6 outline-none transition-all placeholder:text-gray-600 ${
+                      isRecording
+                        ? "border-brand-cyan/50 bg-brand-cyan/5 text-white ring-1 ring-brand-cyan/20"
                         : "border-dark-border bg-dark-card text-gray-200 focus:border-brand-cyan/50"
                     } disabled:cursor-not-allowed disabled:opacity-70`}
                   />
 
-                  {/* Audio Wave Visualizer while Recording */}
-                  {isRecording && interviewMode === "voice" && (
-                    <div className="flex items-center justify-center gap-1.5 py-2">
-                      <span className="text-xs font-medium text-brand-cyan animate-pulse h-6 mr-2">Recording Voice...</span>
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((bar) => (
-                        <motion.span
-                          key={bar}
-                          animate={{ height: ["6px", "24px", "8px", "20px", "6px"] }}
-                          transition={{ repeat: Infinity, duration: 0.6, delay: bar * 0.08 }}
-                          className="w-1 bg-brand-cyan rounded-full inline-block"
+                  {/* Recording visualizer */}
+                  {isRecording && (
+                    <div className="flex items-center justify-center gap-1.5 py-1">
+                      <span className="text-xs font-medium text-brand-cyan animate-pulse mr-2">Recording…</span>
+                      {[0,1,2,3,4,5,6,7,8,9].map((bar) => (
+                        <motion.span key={bar}
+                          animate={{ height: ["5px","22px","7px","18px","5px"] }}
+                          transition={{ repeat: Infinity, duration: 0.65, delay: bar * 0.07 }}
+                          className="w-1 rounded-full bg-brand-cyan inline-block"
                         />
                       ))}
                     </div>
@@ -1142,34 +924,27 @@ export default function MockInterviewPage() {
                     {interviewMode === "voice" && (
                       <button
                         onClick={isRecording ? stopRecording : startRecording}
-                        disabled={hasAnsweredCurrent}
-                        className={`inline-flex h-12 items-center justify-center gap-2.5 rounded-xl font-bold text-sm px-6 transition-all shadow-md ${
+                        disabled={hasAnsweredCurrent || isEvaluating}
+                        className={`inline-flex h-12 items-center justify-center gap-2.5 rounded-xl border font-bold text-sm px-5 transition-all ${
                           isRecording
-                            ? "bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 animate-pulse"
-                            : "bg-dark-card text-white border border-dark-border hover:bg-dark-hover hover:border-brand-cyan/40"
+                            ? "border-red-500/40 bg-red-500/15 text-red-400 animate-pulse"
+                            : "border-dark-border bg-dark-card text-white hover:border-brand-cyan/40"
                         } disabled:cursor-not-allowed disabled:opacity-50`}
                       >
-                        {isRecording ? (
-                          <>
-                            <MicOff className="h-4 w-4 text-red-400" />
-                            Stop Recording
-                          </>
-                        ) : (
-                          <>
-                            <Mic className="h-4 w-4 text-brand-cyan" />
-                            Start Voice Recording
-                          </>
-                        )}
+                        {isRecording ? <><MicOff className="h-4 w-4 text-red-400" /> Stop</> : <><Mic className="h-4 w-4 text-brand-cyan" /> Start Recording</>}
                       </button>
                     )}
 
                     <button
                       onClick={submitAnswer}
-                      disabled={!currentText.trim() || hasAnsweredCurrent}
+                      disabled={!answer.trim() || hasAnsweredCurrent || isEvaluating}
                       className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-brand-cyan px-5 text-sm font-bold text-dark-bg shadow-glow-cyan transition-all hover:bg-brand-cyan/90 disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      <Send className="h-4 w-4" />
-                      {interviewMode === "voice" ? "Submit & Review Spoken Answer" : "Submit Answer"}
+                      {isEvaluating ? (
+                        <><Loader2 className="h-4 w-4 animate-spin" /> Evaluating with AI…</>
+                      ) : (
+                        <><Send className="h-4 w-4" /> Submit Answer</>
+                      )}
                     </button>
 
                     {!sessionComplete && hasAnsweredCurrent && (
@@ -1177,8 +952,7 @@ export default function MockInterviewPage() {
                         onClick={nextQuestion}
                         className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-dark-border bg-dark-card px-5 text-sm font-bold text-gray-200 transition-colors hover:text-white"
                       >
-                        Next Question
-                        <ChevronRight className="h-4 w-4" />
+                        Next <ChevronRight className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -1188,149 +962,171 @@ export default function MockInterviewPage() {
           </div>
         </main>
 
-        {/* Right Sidebar: Evaluation Feedback */}
+        {/* ─── Right Sidebar: Feedback ─── */}
         <aside className="space-y-6">
           <section className="glass-card rounded-2xl border-brand-purple/20 bg-gradient-to-br from-brand-purple/10 to-transparent p-5">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-bold text-white">
               <Brain className="h-4 w-4 text-brand-purple" />
-              {interviewMode === "voice" ? "Voice Evaluation" : "Evaluation"}
+              AI Feedback
+              {currentEvaluation?.source === "ml" && (
+                <span className="ml-auto rounded-full bg-brand-cyan/10 border border-brand-cyan/20 px-2 py-0.5 text-[9px] font-bold text-brand-cyan uppercase tracking-wider">ML Evaluated</span>
+              )}
+              {currentEvaluation?.source === "heuristic" && (
+                <span className="ml-auto rounded-full bg-gray-500/10 border border-gray-500/20 px-2 py-0.5 text-[9px] font-bold text-gray-400 uppercase tracking-wider">Heuristic</span>
+              )}
             </h2>
 
-            {currentEvaluation ? (
+            {isEvaluating && (
+              <div className="flex flex-col items-center justify-center gap-3 py-10 text-gray-400">
+                <Loader2 className="h-8 w-8 animate-spin text-brand-cyan" />
+                <p className="text-xs font-medium text-center">Running Sentence Transformer evaluation…</p>
+              </div>
+            )}
+
+            {!isEvaluating && currentEvaluation ? (
               <div className="space-y-4">
-                {/* Score badge */}
-                <div className="rounded-xl border border-white/5 bg-white/5 p-3 flex items-center justify-between">
+                {/* Score */}
+                <div className="rounded-xl border border-white/5 bg-white/5 p-3 flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-[10px] font-bold uppercase text-brand-cyan">
-                      {interviewMode === "voice" ? "Voice & Tech Score" : "Score"}
-                    </p>
-                    <p className="text-2xl font-bold text-white">{currentEvaluation.score}/10</p>
-                    <p className="text-xs text-gray-400">{currentEvaluation.overallLabel}</p>
+                    <p className="text-[10px] font-bold uppercase text-brand-cyan">Score</p>
+                    <p className="text-3xl font-bold text-white">{currentEvaluation.score}<span className="text-lg text-gray-500">/10</span></p>
+                    <p className="text-xs text-gray-400 mt-0.5">{currentEvaluation.overallLabel}</p>
                   </div>
-                  {currentEvaluation.voiceStats && (
-                    <div className="text-right font-mono text-xs text-gray-400">
-                      <p>{currentEvaluation.voiceStats.wordCount} words</p>
-                      <p className="text-brand-cyan">{currentEvaluation.voiceStats.wpm} WPM</p>
-                      <p className="text-brand-orange">{currentEvaluation.voiceStats.fillerCount} fillers</p>
+                  {currentEvaluation.source === "ml" && (
+                    <div className="text-right text-[10px] text-gray-400 space-y-0.5 mt-1">
+                      <p>Similarity: <span className="text-brand-cyan font-mono">{(currentEvaluation.similarityScore * 100).toFixed(0)}%</span></p>
+                      <p>Coverage: <span className="text-brand-purple font-mono">{currentEvaluation.conceptCoverage.toFixed(0)}%</span></p>
+                    </div>
+                  )}
+                  {currentEvaluation.source === "heuristic" && currentEvaluation.voiceStats && (
+                    <div className="text-right text-[10px] text-gray-400 space-y-0.5 mt-1">
+                      <p className="text-brand-cyan font-mono">{currentEvaluation.voiceStats.wpm} WPM</p>
+                      <p className="text-brand-orange font-mono">{currentEvaluation.voiceStats.fillerCount} fillers</p>
                     </div>
                   )}
                 </div>
 
                 {/* Summary */}
                 <div className="rounded-xl border border-white/5 bg-white/5 p-3">
-                  <p className="mb-1 text-[10px] font-bold uppercase text-brand-purple">Interviewer Evaluation</p>
+                  <p className="mb-1 text-[10px] font-bold uppercase text-brand-purple">Evaluation Summary</p>
                   <p className="text-xs leading-5 text-gray-300">{currentEvaluation.summary}</p>
                 </div>
 
-                {/* Rubric */}
-                <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase text-brand-cyan">Rubric Breakdown</p>
-                  <div className="space-y-3">
-                    {Object.entries({
-                      Relevance: { val: currentEvaluation.rubric.relevance, max: 3 },
-                      ...(currentEvaluation.rubric.clarityPacing !== undefined 
-                        ? { "Clarity & Pacing": { val: currentEvaluation.rubric.clarityPacing, max: 2 } } 
-                        : {}),
-                      ...(currentEvaluation.rubric.depth !== undefined 
-                        ? { "Depth": { val: currentEvaluation.rubric.depth, max: 2 } } 
-                        : {}),
-                      "Specificity": { val: currentEvaluation.rubric.specificity, max: 2 },
-                      "Structure": { val: currentEvaluation.rubric.structure, max: 1.5 },
-                      ...(currentEvaluation.rubric.confidenceTone !== undefined 
-                        ? { "Confidence & Tone": { val: currentEvaluation.rubric.confidenceTone, max: 1 } } 
-                        : {}),
-                      ...(currentEvaluation.rubric.professionalism !== undefined 
-                        ? { "Professionalism": { val: currentEvaluation.rubric.professionalism, max: 1 } } 
-                        : {}),
-                      "Reference Alignment": { val: currentEvaluation.rubric.referenceAlignment, max: 0.5 },
-                    }).map(([label, info]) => (
-                      <div key={label} className="space-y-1.5">
-                        <div className="flex justify-between text-[10px]">
-                          <span className="text-gray-400">{label}</span>
-                          <span className="text-white">{toPercent(info.val, info.max)}%</span>
+                {/* ML Rubric */}
+                {currentEvaluation.source === "heuristic" && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase text-brand-cyan">Rubric</p>
+                    <div className="space-y-2.5">
+                      {[
+                        ["Relevance", currentEvaluation.rubric.relevance, 3],
+                        ["Depth", currentEvaluation.rubric.depth, 2],
+                        ["Specificity", currentEvaluation.rubric.specificity, 2],
+                        ["Structure", currentEvaluation.rubric.structure, 1.5],
+                        ["Professionalism", currentEvaluation.rubric.professionalism, 1],
+                        ["Concept Cues", currentEvaluation.rubric.referenceAlignment, 0.5],
+                      ].map(([label, value, max]) => (
+                        <div key={label as string} className="space-y-1">
+                          <div className="flex justify-between text-[10px]">
+                            <span className="text-gray-400">{label}</span>
+                            <span className="text-white">{toPercent(value as number, max as number)}%</span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-dark-bg">
+                            <div className="h-full bg-brand-cyan shadow-glow-cyan" style={{ width: `${toPercent(value as number, max as number)}%` }} />
+                          </div>
                         </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-dark-bg">
-                          <div
-                            className="h-full bg-brand-cyan shadow-glow-cyan"
-                            style={{ width: `${toPercent(info.val, info.max)}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Mentioned / Missing Concepts (ML mode) */}
+                {currentEvaluation.source === "ml" && currentEvaluation.mentionedConcepts.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase text-brand-green">Concepts You Covered</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {currentEvaluation.mentionedConcepts.map((c) => (
+                        <span key={c} className="rounded-full bg-brand-green/10 px-2 py-0.5 text-[10px] text-brand-green">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {currentEvaluation.source === "ml" && currentEvaluation.missingConcepts.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase text-brand-orange">Missing Concepts</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {currentEvaluation.missingConcepts.map((c) => (
+                        <span key={c} className="rounded-full bg-brand-orange/10 px-2 py-0.5 text-[10px] text-brand-orange">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Strengths */}
                 <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase text-brand-green">
-                    {interviewMode === "voice" ? "Spoken Strengths" : "Strengths"}
-                  </p>
+                  <p className="mb-2 text-[10px] font-bold uppercase text-brand-green">Strengths</p>
                   <ul className="space-y-1.5 text-xs leading-5 text-gray-300">
-                    {currentEvaluation.strengths.map((strength) => (
-                      <li key={strength} className="flex items-start gap-1.5">
-                        <span className="text-brand-green font-bold">•</span>
-                        <span>{strength}</span>
-                      </li>
+                    {currentEvaluation.strengths.map((s) => (
+                      <li key={s} className="flex items-start gap-1.5"><span className="text-brand-green font-bold shrink-0">•</span>{s}</li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Areas for Improvement */}
+                {/* Improvements */}
                 <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase text-brand-orange">
-                    {interviewMode === "voice" ? "Vocal Improvements" : "Areas for Improvement"}
-                  </p>
+                  <p className="mb-2 text-[10px] font-bold uppercase text-brand-orange">Improvements</p>
                   <ul className="space-y-1.5 text-xs leading-5 text-gray-300">
-                    {currentEvaluation.improvements.map((improvement) => (
-                      <li key={improvement} className="flex items-start gap-1.5">
-                        <span className="text-brand-orange font-bold">•</span>
-                        <span>{improvement}</span>
-                      </li>
+                    {currentEvaluation.improvements.map((s) => (
+                      <li key={s} className="flex items-start gap-1.5"><span className="text-brand-orange font-bold shrink-0">•</span>{s}</li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Optional Cues */}
-                <div>
-                  <p className="mb-2 text-[10px] font-bold uppercase text-brand-purple">Recommended Tech Concepts</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {currentEvaluation.optionalCues.length ? (
-                      currentEvaluation.optionalCues.map((cue) => (
-                        <span key={cue} className="rounded-full bg-brand-purple/10 px-2.5 py-1 text-[11px] text-brand-purple">
-                          {cue}
-                        </span>
-                      ))
-                    ) : (
-                      <span className="text-xs text-gray-500">All core concepts covered!</span>
-                    )}
+                {/* Optional Cues (heuristic) or Suggestions (ML) */}
+                {currentEvaluation.source === "heuristic" && currentEvaluation.optionalCues.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase text-brand-purple">Suggested Keywords</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {currentEvaluation.optionalCues.map((c) => (
+                        <span key={c} className="rounded-full bg-brand-purple/10 px-2.5 py-1 text-[11px] text-brand-purple">{c}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
+                {currentEvaluation.source === "ml" && currentEvaluation.suggestions.length > 0 && (
+                  <div>
+                    <p className="mb-2 text-[10px] font-bold uppercase text-brand-purple">Study Suggestions</p>
+                    <ul className="space-y-1.5 text-xs text-gray-300">
+                      {currentEvaluation.suggestions.map((s) => (
+                        <li key={s} className="flex items-start gap-1.5"><span className="text-brand-purple font-bold shrink-0">•</span>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
-            ) : (
+            ) : !isEvaluating ? (
               <p className="text-sm leading-6 text-gray-400">
-                {interviewMode === "voice" 
-                  ? <span>Click <strong className="text-brand-cyan font-medium">Start Voice Recording</strong> or type your answer and submit to analyze your vocal clarity, pacing, tech relevance, and structure.</span>
-                  : <span>Submit your typed answer to get a fair score based on relevance, clarity, detail, examples, structure, and professionalism.</span>
-                }
+                Submit your answer to receive AI-powered feedback using{" "}
+                <span className="text-brand-cyan font-medium">Sentence Transformer semantic scoring</span>{" "}
+                — gibberish and off-topic answers are automatically rejected.
               </p>
-            )}
+            ) : null}
           </section>
 
-          {/* Answered Questions History */}
+          {/* History */}
           <section className="glass-card rounded-2xl p-5">
-            <h2 className="mb-4 text-sm font-bold text-white">Answered Questions</h2>
+            <h2 className="mb-4 text-sm font-bold text-white">Answered</h2>
             <div className="space-y-3">
               {records.length ? (
-                records.map((record, index) => (
-                  <div key={`${record.question.id}-${index}`} className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3">
+                records.map((rec, i) => (
+                  <div key={`${rec.question.id}-${i}`} className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/5 p-3">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-green" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-xs font-medium text-white">{record.question.question}</p>
+                      <p className="truncate text-xs font-medium text-white">{rec.question.question}</p>
                       <div className="mt-1 flex items-center justify-between text-[11px] text-gray-500">
-                        <span>Score: {record.evaluation.score}/10</span>
-                        {record.evaluation.voiceStats && (
-                          <span className="font-mono text-brand-cyan">{record.evaluation.voiceStats.wpm} WPM</span>
-                        )}
+                        <span>Score: <span className="font-mono text-white">{rec.evaluation.score}/10</span></span>
+                        <span className={`text-[9px] font-bold uppercase ${rec.evaluation.source === "ml" ? "text-brand-cyan" : "text-gray-500"}`}>
+                          {rec.evaluation.source === "ml" ? "ML" : "Heuristic"}
+                        </span>
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Target, 
@@ -132,6 +132,45 @@ export default function ProfilingPage() {
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictionResult, setPredictionResult] = useState<PredictionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Check if user already has an active roadmap
+  const [existingProfile, setExistingProfile] = useState<{ domain: string | null; day: number } | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/roadmap")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.user?.domainInterest || data?.roadmap) {
+          setExistingProfile({
+            domain: data.user?.domainInterest || "Placement",
+            day: data.user?.currentDay || 1,
+          });
+        }
+      })
+      .catch(() => {})
+      .finally(() => setCheckingExisting(false));
+  }, []);
+
+  const handleExitExistingRoadmap = async () => {
+    setIsExiting(true);
+    try {
+      const res = await fetch("/api/roadmap/exit", { method: "POST" });
+      if (res.ok) {
+        setExistingProfile(null);
+        setCurrentStep(0);
+        setAnswers({});
+      } else {
+        alert("Failed to exit roadmap. Please try again.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error exiting roadmap.");
+    } finally {
+      setIsExiting(false);
+    }
+  };
 
   const handleOptionSelect = (questionId: string, option: string) => {
     setAnswers(prev => ({ ...prev, [questionId]: option }));
@@ -181,6 +220,50 @@ export default function ProfilingPage() {
   };
 
   const progress = ((currentStep + 1) / steps.length) * 100;
+
+  if (checkingExisting) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 space-y-4">
+        <div className="w-10 h-10 border-4 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin" />
+        <p className="text-gray-400 text-xs">Checking active roadmap status...</p>
+      </div>
+    );
+  }
+
+  if (existingProfile) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 px-6 text-center space-y-8">
+        <div className="w-20 h-20 bg-brand-cyan/10 border border-brand-cyan/20 rounded-3xl flex items-center justify-center mx-auto text-brand-cyan shadow-glow-cyan/25">
+          <CheckCircle2 className="w-10 h-10" />
+        </div>
+        <div className="space-y-3">
+          <span className="text-[10px] font-bold text-brand-cyan bg-brand-cyan/10 border border-brand-cyan/20 px-3 py-1 rounded-full uppercase tracking-wider">
+            Active Roadmap Found
+          </span>
+          <h2 className="text-3xl font-bold text-white tracking-tight">You Already Have an Active Roadmap!</h2>
+          <p className="text-sm text-gray-400 max-w-md mx-auto leading-relaxed">
+            You are currently on <strong className="text-white">Day {existingProfile.day}</strong> of your <strong className="text-brand-cyan">{existingProfile.domain}</strong> preparation track. You do not need to take another profiling unless you want to discontinue your active roadmap.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+          <Link
+            href="/roadmap"
+            className="px-6 py-3.5 bg-brand-cyan text-dark-bg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-brand-cyan/90 transition-all shadow-glow-cyan"
+          >
+            <Map className="w-4 h-4 text-dark-bg" />
+            Continue to Current Roadmap
+          </Link>
+          <button
+            onClick={handleExitExistingRoadmap}
+            disabled={isExiting}
+            className="px-6 py-3.5 bg-dark-card border border-red-500/30 text-red-400 font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-red-500/10 transition-all"
+          >
+            {isExiting ? "Discontinuing..." : "Exit Roadmap & Take New Assessment"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isPredicting) {
     return (
