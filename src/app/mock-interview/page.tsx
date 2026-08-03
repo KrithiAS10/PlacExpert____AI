@@ -9,7 +9,7 @@ import {
   Database,
   Globe,
   Monitor,
-  RefreshCw,
+
   RotateCcw,
   Send,
   Sparkles,
@@ -397,8 +397,28 @@ export default function MockInterviewPage() {
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const speechSupported = useMemo(() => Boolean(getSpeechRecognition()), []);
 
+  // ─── Speech & Recording Controls ──────────────────────────────────────────
+  const stopSpeaking = useCallback(() => {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
+  }, []);
+
+  const stopRecording = useCallback(() => {
+    try { recognitionRef.current?.stop(); } catch {}
+    setIsRecording(false);
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  }, []);
+
   // ─── Dataset loader ──────────────────────────────────────────────────────
   const loadCsvDataset = useCallback(async () => {
+    stopRecording();
+    stopSpeaking();
+    setTranscript("");
+    setRecordingSeconds(0);
+    setValidationError(null);
+    setSpeechError(null);
     setIsRefreshing(true);
     try {
       const response = await fetch(`/api/mock-interview/questions?refresh=${Date.now()}`, { cache: "no-store" });
@@ -422,7 +442,7 @@ export default function MockInterviewPage() {
     } finally {
       setIsRefreshing(false);
     }
-  }, []);
+  }, [stopRecording, stopSpeaking]);
 
   useEffect(() => {
     const id = window.setTimeout(() => loadCsvDataset(), 0);
@@ -473,22 +493,22 @@ export default function MockInterviewPage() {
   const selectDomain = (domainId: MockInterviewDomainId) => {
     stopRecording(); stopSpeaking();
     setSelectedDomainId(domainId);
-    setTranscript(""); setRecordingSeconds(0); setValidationError(null);
+    setTranscript(""); setRecordingSeconds(0); setValidationError(null); setSpeechError(null);
     setSessions((cur) => ({ ...cur, [domainId]: cur[domainId] ?? createEmptySession() }));
   };
 
   const nextQuestion = () => {
     stopRecording(); stopSpeaking();
-    setTranscript(""); setRecordingSeconds(0); setValidationError(null);
+    setTranscript(""); setRecordingSeconds(0); setValidationError(null); setSpeechError(null);
     const nextIndex = Math.min(questionIndex + 1, selectedDomain.questions.length - 1);
     updateSelectedSession((s) => ({ ...s, questionIndex: nextIndex, answer: "", currentEvaluation: null }));
   };
 
-  const restartSession = () => {
+  const restartSession = useCallback(() => {
     stopRecording(); stopSpeaking();
-    setTranscript(""); setRecordingSeconds(0); setValidationError(null);
+    setTranscript(""); setRecordingSeconds(0); setValidationError(null); setSpeechError(null);
     updateSelectedSession(() => createEmptySession());
-  };
+  }, [stopRecording, stopSpeaking, updateSelectedSession]);
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const submitAnswer = async () => {
@@ -545,13 +565,6 @@ export default function MockInterviewPage() {
     [currentQuestion?.question, speechPace, interviewMode]
   );
 
-  const stopSpeaking = useCallback(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (interviewMode === "voice" && autoSpeak && currentQuestion) {
       const t = setTimeout(() => speakQuestion(currentQuestion.question), 450);
@@ -602,12 +615,6 @@ export default function MockInterviewPage() {
     }
   };
 
-  const stopRecording = useCallback(() => {
-    try { recognitionRef.current?.stop(); } catch {}
-    setIsRecording(false);
-    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
-  }, []);
-
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-[calc(100vh-8rem)] space-y-6">
@@ -653,12 +660,12 @@ export default function MockInterviewPage() {
             </button>
           </div>
           <button
-            onClick={loadCsvDataset}
-            disabled={isRefreshing}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-dark-border bg-dark-card px-3 text-sm font-medium text-gray-300 transition-colors hover:text-white disabled:opacity-50"
+            onClick={restartSession}
+            title="Restart current interview session"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-dark-border bg-dark-card px-3 text-sm font-medium text-gray-300 transition-colors hover:text-white hover:border-brand-purple/40"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-            Refresh
+            <RotateCcw className="h-4 w-4 text-brand-purple" />
+            Restart
           </button>
         </div>
       </div>

@@ -143,6 +143,7 @@ export default function VoiceInterviewPage() {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [transcript, setTranscript] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [recognition, setRecognition] = useState<SpeechRecognitionLike | null>(null);
   const [currentEvaluation, setCurrentEvaluation] = useState<VoiceEvaluation | null>(null);
   const [records, setRecords] = useState<VoiceRecord[]>([]);
@@ -220,12 +221,16 @@ export default function VoiceInterviewPage() {
 
   const resetSession = () => {
     recognition?.stop();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     setQuestionIndex(0);
     setTranscript("");
     setCurrentEvaluation(null);
     setRecords([]);
     setIsRecording(false);
   };
+
 
   const switchCategory = (category: (typeof categories)[number]) => {
     recognition?.stop();
@@ -248,13 +253,15 @@ export default function VoiceInterviewPage() {
           <h1 className="text-2xl font-bold text-white">Voice Mock Interview</h1>
           <p className="text-sm text-gray-400">Practice spoken answers with transcript-based professional feedback.</p>
         </div>
-        <button
-          onClick={resetSession}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-dark-border bg-dark-card px-4 text-sm font-medium text-gray-300 transition-colors hover:text-white"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Reset
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={resetSession}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-dark-border bg-dark-card px-4 text-sm font-medium text-gray-300 transition-colors hover:text-white hover:border-brand-purple/40"
+          >
+            <RotateCcw className="h-4 w-4 text-brand-purple" />
+            Restart Session
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
@@ -270,11 +277,10 @@ export default function VoiceInterviewPage() {
                   <button
                     key={category}
                     onClick={() => switchCategory(category)}
-                    className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                      isSelected
+                    className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all ${isSelected
                         ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20"
                         : "border-dark-border bg-transparent hover:border-white/10"
-                    }`}
+                      }`}
                   >
                     <span className={isSelected ? "text-sm font-medium text-white" : "text-sm font-medium text-gray-400"}>{category}</span>
                     <span className="rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-gray-400">{count}</span>
