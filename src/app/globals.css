@@ -75,3 +75,9 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Global: all buttons and links should show pointer cursor */
+button,
+[role="button"],
+a {
+  cursor: pointer;
+}

@@ -52,6 +52,7 @@ interface NavbarProps {
 
 export function Navbar({ onMenuClick, user, onLogout }: NavbarProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   return (
     <header className="h-14 sm:h-16 border-b border-dark-border bg-dark-bg/85 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between gap-3">
@@ -84,10 +85,61 @@ export function Navbar({ onMenuClick, user, onLogout }: NavbarProps) {
 
       {/* Right: notifications + user loggedin details */}
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-        <button className="relative p-2 text-gray-400 hover:text-white transition-colors rounded-xl hover:bg-white/5">
-          <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-cyan rounded-full" />
-        </button>
+        {/* Notification Bell */}
+        <div className="relative">
+          <button
+            onClick={() => { setIsNotifOpen(!isNotifOpen); setIsOpen(false); }}
+            className="relative p-2 text-gray-400 hover:text-white transition-colors rounded-xl hover:bg-white/5 cursor-pointer"
+            title="Notifications"
+          >
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-brand-cyan rounded-full animate-pulse" />
+          </button>
+
+          <AnimatePresence>
+            {isNotifOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setIsNotifOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 8 }}
+                  transition={{ duration: 0.15, ease: "easeOut" }}
+                  className="absolute right-0 mt-3 w-80 rounded-2xl border border-dark-border bg-[#0b0f19] shadow-2xl z-50 overflow-hidden"
+                >
+                  <div className="px-5 py-4 border-b border-dark-border flex items-center justify-between">
+                    <p className="text-sm font-bold text-white">Notifications</p>
+                    <span className="text-[10px] bg-brand-cyan/10 text-brand-cyan px-2 py-0.5 rounded-full font-bold border border-brand-cyan/20">3 new</span>
+                  </div>
+                  <div className="divide-y divide-dark-border max-h-72 overflow-y-auto">
+                    {[
+                      { icon: "🎯", title: "Readiness Score Updated", desc: "Your AI profile score has been recalculated.", time: "Just now", color: "text-brand-cyan" },
+                      { icon: "🔥", title: "Streak Milestone!", desc: "You're on a 3-day prep streak. Keep it up!", time: "2h ago", color: "text-orange-400" },
+                      { icon: "📋", title: "New Question Set Ready", desc: "15 new DSA questions added to your mock set.", time: "5h ago", color: "text-brand-purple" },
+                    ].map((n, i) => (
+                      <div key={i} className="flex gap-3 px-5 py-3.5 hover:bg-white/[0.03] transition-colors cursor-pointer">
+                        <span className="text-lg mt-0.5 shrink-0">{n.icon}</span>
+                        <div className="min-w-0">
+                          <p className={`text-xs font-bold ${n.color}`}>{n.title}</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">{n.desc}</p>
+                          <p className="text-[10px] text-gray-600 mt-1">{n.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="px-5 py-3 border-t border-dark-border">
+                    <button
+                      onClick={() => setIsNotifOpen(false)}
+                      className="w-full text-center text-xs text-brand-cyan hover:text-brand-cyan/80 font-bold transition-colors cursor-pointer py-1"
+                    >
+                      Mark all as read
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
 
         {/* User Profile Trigger and Dropdown */}
         <div className="relative">
