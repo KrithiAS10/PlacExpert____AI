@@ -50,6 +50,7 @@ model User {
   surveyResult       SurveyResult?
   analytics          Analytics[]
   activities         Activity[]
+  solvedProblems     SolvedProblem[]
 }
 
 model SurveyResult {
@@ -103,6 +104,7 @@ model Task {
   
   phaseId      String?
   phase        Phase?   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  solvedProblems SolvedProblem[]
 }
 
 model RoadmapTemplate {
@@ -146,4 +148,18 @@ model Activity {
   action    String
   status    String?
   timestamp DateTime @default(now())
+}
+
+model SolvedProblem {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  solvedAt  DateTime @default(now())
+  notes     String?
+  proofUrl  String?
+
+  @@index([userId])
+  @@index([taskId])
 }
