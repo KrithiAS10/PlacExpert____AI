@@ -847,8 +847,11 @@ export default function RoadmapPage() {
         {/* Left Side: Accordion phases */}
         <div className="lg:col-span-2 space-y-3">
           <div className="flex justify-between items-center text-xs text-gray-500 px-1">
-            <span>PREPARATION TRACK</span>
-            <span>{doneTasks}/{allTasks.length} COMPLETED</span>
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>PREPARATION TRACK · {totalDays} DAYS</span>
+            </span>
+            <span>{doneTasks}/{allTasks.length} TASKS COMPLETED</span>
           </div>
 
           <div className="space-y-2">
@@ -895,7 +898,14 @@ export default function RoadmapPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-semibold text-white truncate block">{phase.title}</span>
-                      <p className="text-[10px] text-gray-500">Days {startDay}–{endDay} · {phaseDone}/{phase.tasks.length} done</p>
+                      <p className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                        <Calendar className="w-2.5 h-2.5" />
+                        Days {startDay}–{endDay}
+                        <span className="text-white/20">·</span>
+                        {endDay - startDay + 1} day{endDay - startDay + 1 !== 1 ? "s" : ""}
+                        <span className="text-white/20">·</span>
+                        {phaseDone}/{phase.tasks.length} done
+                      </p>
                     </div>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                   </button>
@@ -913,7 +923,15 @@ export default function RoadmapPage() {
                         <div className="divide-y divide-white/[0.03]">
                           {[...phase.tasks].sort((a, b) => a.day - b.day).map((task) => {
                             const globalIdx = allTasks.findIndex((t) => t.id === task.id);
+                            const previousCourseEndDay = allTasks[globalIdx - 1]?.day ?? 0;
+                            const courseStartDay = previousCourseEndDay + 1;
+                            const durationDays = Math.max(1, task.day - previousCourseEndDay);
                             const isLocked = firstPendingIdx !== -1 && globalIdx > firstPendingIdx;
+                            const courseDay = task.status === "COMPLETED"
+                              ? durationDays
+                              : isLocked
+                              ? 0
+                              : Math.min(durationDays, Math.max(1, user.currentDay - courseStartDay + 1));
                             const isToday = !isLocked && todayTask && task.id === todayTask.id;
                             const isDone  = task.status === "COMPLETED";
                             const pMeta   = resolvePlatform(task.description, task.type, task.title);
@@ -938,11 +956,19 @@ export default function RoadmapPage() {
                                       <span className="text-[8px] text-gray-500 font-bold">{task.day}</span>
                                     </div>
                                   )}
-                                  <span className={`text-xs font-medium truncate ${
-                                    isDone ? "text-gray-600 line-through" : isLocked ? "text-gray-600 select-none cursor-not-allowed" : "text-gray-300"
-                                  }`}>
-                                    {task.title}
-                                  </span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className={`text-xs font-medium truncate ${
+                                      isDone ? "text-gray-600 line-through" : isLocked ? "text-gray-600 select-none cursor-not-allowed" : "text-gray-300"
+                                    }`}>
+                                      {task.title}
+                                    </span>
+                                    <span className={`text-[9px] flex items-center gap-0.5 ${
+                                      isLocked ? "text-gray-700" : isDone ? "text-gray-600" : isToday ? "text-brand-cyan/70" : "text-gray-600"
+                                    }`}>
+                                      <Calendar className="w-2 h-2" />
+                                      {isToday ? "Today — " : ""}{courseDay}/{durationDays} day{durationDays !== 1 ? "s" : ""} completed
+                                    </span>
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center gap-2 shrink-0">
@@ -1005,12 +1031,14 @@ export default function RoadmapPage() {
             const pMeta = resolvePlatform(todayTask.description, todayTask.type, todayTask.title);
             const PlatformIcon = pMeta.icon;
             const linkVisited = Boolean(visitedLinks[todayTask.id]);
+            const activeTaskIndex = allTasks.findIndex((task) => task.id === todayTask.id);
+            const activeCourseStartDay = (allTasks[activeTaskIndex - 1]?.day ?? 0) + 1;
             return (
               <div className="relative overflow-hidden rounded-xl border border-brand-cyan/20 bg-gradient-to-br from-brand-cyan/10 via-brand-blue/5 to-transparent p-4">
                 <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-cyan/5 blur-3xl pointer-events-none" />
                 <div className="relative space-y-3">
                   <div className="flex justify-between items-center text-[10px] font-bold">
-                    <span className="text-brand-cyan uppercase tracking-widest">ACTIVE TASK · DAY {todayTask.day}</span>
+                    <span className="text-brand-cyan uppercase tracking-widest">ACTIVE TASK · DAY {activeCourseStartDay}</span>
                     <span className={`px-2 py-0.5 rounded-full border flex items-center gap-1 ${pMeta.color} ${pMeta.bg} ${pMeta.border}`}>
                       <PlatformIcon className="w-2.5 h-2.5" />
                       {pMeta.label}

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Map, 
-  MessageSquare, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Map,
+  MessageSquare,
+  BarChart3,
   Zap,
   Target,
   Mic
@@ -40,13 +40,13 @@ export function Sidebar({ user }: SidebarProps) {
   const navItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Profiling", href: "/profiling", icon: Target, badge: "New" },
-    { 
-      name: "My Roadmap", 
-      href: "/roadmap", 
-      icon: Map, 
-      badge: user?.currentDay ? `Day ${user.currentDay}` : "Day 1" 
+    {
+      name: "My Roadmap",
+      href: "/roadmap",
+      icon: Map,
+      badge: user?.currentDay ? `Day ${user.currentDay}` : "Day 1"
     },
-    { name: "Voice Mock Interview", href: "/mock-interview", icon: Mic, badge: "AI Voice" },
+    { name: "Mock Interview", href: "/mock-interview", icon: Mic },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
   ];
 
@@ -73,8 +73,8 @@ export function Sidebar({ user }: SidebarProps) {
               href={item.href}
               className={cn(
                 "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group",
-                isActive 
-                  ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20" 
+                isActive
+                  ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20"
                   : "text-gray-400 hover:bg-dark-hover hover:text-white"
               )}
             >

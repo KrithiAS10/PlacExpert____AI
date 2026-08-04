@@ -5,7 +5,7 @@ import { Mic, MicOff, Send, Play, RotateCcw, Volume2, Brain, CheckCircle2 } from
 import { voiceInterviewQuestions, type VoiceInterviewQuestion } from "@/lib/voice-interview-data";
 
 type SpeechRecognitionEventLike = {
-  results: { length: number; [index: number]: { [index: number]: { transcript: string } } };
+  results: { length: number;[index: number]: { [index: number]: { transcript: string } } };
 };
 
 type SpeechRecognitionLike = {
@@ -261,8 +261,8 @@ export default function VoiceInterviewPage() {
                     key={category}
                     onClick={() => switchCategory(category)}
                     className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all ${isSelected
-                        ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20"
-                        : "border-dark-border bg-transparent hover:border-white/10"
+                      ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20"
+                      : "border-dark-border bg-transparent hover:border-white/10"
                       }`}
                   >
                     <span className={isSelected ? "text-sm font-medium text-white" : "text-sm font-medium text-gray-400"}>{category}</span>

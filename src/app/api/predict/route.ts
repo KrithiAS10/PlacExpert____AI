@@ -133,7 +133,8 @@ export async function POST(req: Request) {
     };
     const total_days = TIMELINE_MAP[timeline] || 45;
 
-    // Scale days proportionally from 1..45 to 1..total_days
+    // Scale blueprint course deadlines proportionally. The UI derives each
+    // course's start day from the previous course deadline.
     const scaledTasks = tasksToUse.map((t) => {
       const scaledDay = Math.max(1, Math.min(total_days, Math.ceil((t.dayNumber / 45) * total_days)));
       return {
