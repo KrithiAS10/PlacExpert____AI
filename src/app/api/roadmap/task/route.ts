@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getLearningStreak } from '@/lib/learning-streak';
 
 export async function POST(req: Request) {
   try {
@@ -52,9 +53,15 @@ export async function POST(req: Request) {
       const completedTasks = allTasks.filter(t => t.status === "COMPLETED");
       const completedTasksCount = completedTasks.length;
 
-      // Dynamic streak: count of distinct days where at least 1 task has been completed
-      const uniqueCompletedDays = new Set(completedTasks.map(t => t.day)).size;
-      const streakCount = uniqueCompletedDays;
+      // A streak is based on real learning activity on consecutive calendar
+      // days, not on the scheduled position of completed tasks.
+      const learningActivity = await prisma.solvedProblem.findMany({
+        where: { userId: user.id },
+        select: { solvedAt: true }
+      });
+      const { streak: streakCount } = getLearningStreak(
+        learningActivity.map((activity) => activity.solvedAt)
+      );
 
       // Base readiness score from profiling level
       const rawReadiness = user.readinessLevel || "Just Starting";
@@ -72,18 +79,19 @@ export async function POST(req: Request) {
         ? baselineScore 
         : Math.min(10.0, Number((baselineScore + progressBoost).toFixed(1)));
 
-      const sortedTasks = allTasks.sort((a, b) => {
+      // Move the active roadmap day to the start of the next course. Task day
+      // values are course deadlines: 2 means Days 1–2, 4 means Days 3–4, etc.
+      const sortedTasks = [...allTasks].sort((a, b) => {
         if (!a.phase || !b.phase) return 0;
-        if (a.phase.order !== b.phase.order) {
-          return a.phase.order - b.phase.order;
-        }
-        const aDay = a.day ?? 0;
-        const bDay = b.day ?? 0;
-        return aDay - bDay;
+        if (a.phase.order !== b.phase.order) return a.phase.order - b.phase.order;
+        return (a.day ?? 0) - (b.day ?? 0);
       });
-
-      const nextPending = sortedTasks.find(t => t.status !== "COMPLETED");
-      const nextDay = (nextPending && nextPending.day !== null) ? nextPending.day : (user.currentDay ?? 1);
+      const nextPendingIndex = sortedTasks.findIndex((task) => task.status !== "COMPLETED");
+      const nextDay = nextPendingIndex === -1
+        ? user.currentDay
+        : nextPendingIndex === 0
+        ? 1
+        : sortedTasks[nextPendingIndex - 1].day + 1;
 
       // Persist updated metrics
       await prisma.user.update({

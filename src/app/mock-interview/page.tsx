@@ -49,7 +49,7 @@ const fallbackDomainStyle = { icon: Brain, color: "text-brand-purple", bg: "bg-b
 type SpeechRecognitionEventLike = {
   results: {
     length: number;
-    [index: number]: { isFinal: boolean; [index: number]: { transcript: string } };
+    [index: number]: { isFinal: boolean;[index: number]: { transcript: string } };
   };
 };
 type SpeechRecognitionLike = {
@@ -174,9 +174,9 @@ function normalizeText(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9+#.\s]/g, " ");
 }
 const GENERIC_WORDS = new Set([
-  "about","after","also","because","been","being","between","could","during","from","have",
-  "into","more","need","should","that","their","them","then","there","these","this",
-  "through","when","where","which","with","work","would","your",
+  "about", "after", "also", "because", "been", "being", "between", "could", "during", "from", "have",
+  "into", "more", "need", "should", "that", "their", "them", "then", "there", "these", "this",
+  "through", "when", "where", "which", "with", "work", "would", "your",
 ]);
 const FILLER_REGEX = /\b(um+|uh+|like|actually|basically|literally|you know|sort of|kinda|i mean|right)\b/gi;
 
@@ -196,15 +196,15 @@ function countCueMatches(answerWords: Set<string>, cues: string[]) {
 function getExpectedCues(question: MockInterviewQuestion) {
   const qText = normalizeText(question.question);
   const EXPECTATIONS = [
-    { patterns: ["tell me about yourself"], cues: ["background","experience","skills","project","goal","role"] },
-    { patterns: ["why do you want","work here"], cues: ["company","role","values","mission","growth","culture"] },
-    { patterns: ["why should we hire"], cues: ["skills","experience","impact","team","contribute"] },
-    { patterns: ["strength","weakness"], cues: ["strength","weakness","improve","learning","feedback"] },
-    { patterns: ["achievement"], cues: ["achieved","led","improved","result","impact","measured"] },
-    { patterns: ["challenging","challenge"], cues: ["situation","action","result","resolved","learned"] },
-    { patterns: ["five years","5 years"], cues: ["grow","learn","skills","role","goals"] },
-    { patterns: ["stress","pressure"], cues: ["prioritize","calm","deadline","focused","organized"] },
-    { patterns: ["ideal work environment"], cues: ["collaborative","feedback","learning","ownership"] },
+    { patterns: ["tell me about yourself"], cues: ["background", "experience", "skills", "project", "goal", "role"] },
+    { patterns: ["why do you want", "work here"], cues: ["company", "role", "values", "mission", "growth", "culture"] },
+    { patterns: ["why should we hire"], cues: ["skills", "experience", "impact", "team", "contribute"] },
+    { patterns: ["strength", "weakness"], cues: ["strength", "weakness", "improve", "learning", "feedback"] },
+    { patterns: ["achievement"], cues: ["achieved", "led", "improved", "result", "impact", "measured"] },
+    { patterns: ["challenging", "challenge"], cues: ["situation", "action", "result", "resolved", "learned"] },
+    { patterns: ["five years", "5 years"], cues: ["grow", "learn", "skills", "role", "goals"] },
+    { patterns: ["stress", "pressure"], cues: ["prioritize", "calm", "deadline", "focused", "organized"] },
+    { patterns: ["ideal work environment"], cues: ["collaborative", "feedback", "learning", "ownership"] },
   ];
   const patternCues = EXPECTATIONS.find((e) => e.patterns.some((p) => qText.includes(p)))?.cues ?? [];
   const questionWords = getMeaningfulWords(question.question).filter((w) => w.length > 4);
@@ -253,9 +253,9 @@ function buildHeuristicEval(
   const overallLabel = score >= 8 ? "Strong" : score >= 6 ? "Good" : score >= 4 ? "Developing" : "Needs Work";
   const summary =
     score >= 8 ? "Strong answer — clear, specific, and well-structured."
-    : score >= 6 ? "Good base. Adding a concrete example or outcome would strengthen it."
-    : score >= 4 ? "Some relevant content but needs more depth, structure, and evidence."
-    : "Too thin for an interview. Rebuild with context → action → result.";
+      : score >= 6 ? "Good base. Adding a concrete example or outcome would strengthen it."
+        : score >= 4 ? "Some relevant content but needs more depth, structure, and evidence."
+          : "Too thin for an interview. Rebuild with context → action → result.";
 
   const strengths = [
     relevance >= 2.2 ? "Directly addresses the question." : "",
@@ -270,7 +270,7 @@ function buildHeuristicEval(
     depth < 1.5 ? "Add more context and technical depth." : "",
     specificity < 1 ? "Include a real project, tech stack, or measured result." : "",
     structure < 1 ? "Structure as: definition → mechanism → example." : "",
-    fillerCount > 2 ? `Cut filler words ("${fillerMatches.slice(0,2).join('", "')}") — pause instead.` : "",
+    fillerCount > 2 ? `Cut filler words ("${fillerMatches.slice(0, 2).join('", "')}") — pause instead.` : "",
   ].filter(Boolean);
 
   const optionalCues = expectedCues
@@ -327,10 +327,10 @@ async function fetchMLEvaluation(
 
     const summary =
       score >= 8.5 ? "Outstanding answer with high semantic alignment to the expected response."
-      : score >= 7 ? "Strong answer — clearly explained with good concept coverage."
-      : score >= 5 ? "Decent understanding shown. Improve with more depth and missing concepts."
-      : score >= 3 ? "Partial answer. Several key concepts are missing or unclear."
-      : "Answer does not meaningfully address the question. Review the topic and try again.";
+        : score >= 7 ? "Strong answer — clearly explained with good concept coverage."
+          : score >= 5 ? "Decent understanding shown. Improve with more depth and missing concepts."
+            : score >= 3 ? "Partial answer. Several key concepts are missing or unclear."
+              : "Answer does not meaningfully address the question. Review the topic and try again.";
 
     const mlImprovements = [];
     if (data.missing_concepts?.length) {
@@ -406,7 +406,7 @@ export default function MockInterviewPage() {
   }, []);
 
   const stopRecording = useCallback(() => {
-    try { recognitionRef.current?.stop(); } catch {}
+    try { recognitionRef.current?.stop(); } catch { }
     setIsRecording(false);
     if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
   }, []);
@@ -576,7 +576,7 @@ export default function MockInterviewPage() {
     return () => {
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
       stopSpeaking();
-      try { recognitionRef.current?.stop(); } catch {}
+      try { recognitionRef.current?.stop(); } catch { }
     };
   }, [stopSpeaking]);
 
@@ -623,37 +623,31 @@ export default function MockInterviewPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-white">Mock Interview</h1>
-            <span className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
-              interviewMode === "voice"
-                ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-cyan"
-                : "bg-brand-purple/10 border-brand-purple/20 text-brand-purple"
-            }`}>
+            <span className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${interviewMode === "voice"
+              ? "bg-brand-cyan/10 border-brand-cyan/20 text-brand-cyan"
+              : "bg-brand-purple/10 border-brand-purple/20 text-brand-purple"
+              }`}>
               {interviewMode === "voice"
                 ? <><Radio className="h-3 w-3 animate-pulse" /> Voice</>
                 : <><Keyboard className="h-3 w-3" /> Text</>}
             </span>
           </div>
-          <p className="text-sm text-gray-400">
-            AI-evaluated interview practice — powered by Sentence Transformers with gibberish detection.
-          </p>
         </div>
         <div className="flex items-center gap-3">
           {/* Mode Toggle */}
           <div className="flex bg-dark-card rounded-lg border border-dark-border p-1 gap-0.5">
             <button
               onClick={() => { setInterviewMode("text"); stopRecording(); stopSpeaking(); setValidationError(null); }}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
-                interviewMode === "text" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"
-              }`}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${interviewMode === "text" ? "bg-white/10 text-white" : "text-gray-400 hover:text-gray-200"
+                }`}
             >
               <Keyboard className="h-3.5 w-3.5" />
               Text
             </button>
             <button
               onClick={() => { setInterviewMode("voice"); setValidationError(null); }}
-              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${
-                interviewMode === "voice" ? "bg-brand-cyan/20 text-brand-cyan" : "text-gray-400 hover:text-gray-200"
-              }`}
+              className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all flex items-center gap-1.5 ${interviewMode === "voice" ? "bg-brand-cyan/20 text-brand-cyan" : "text-gray-400 hover:text-gray-200"
+                }`}
             >
               <Mic className="h-3.5 w-3.5" />
               Voice
@@ -687,9 +681,8 @@ export default function MockInterviewPage() {
                   <button
                     key={domain.id}
                     onClick={() => selectDomain(domain.id)}
-                    className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all ${
-                      isSelected ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20" : "border-dark-border hover:border-white/10"
-                    }`}
+                    className={`flex w-full items-center justify-between rounded-xl border p-3 text-left transition-all ${isSelected ? "border-brand-cyan/50 bg-white/5 ring-1 ring-brand-cyan/20" : "border-dark-border hover:border-white/10"
+                      }`}
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${style.bg}`}>
@@ -798,11 +791,10 @@ export default function MockInterviewPage() {
               {interviewMode === "voice" && (
                 <button
                   onClick={isSpeaking ? stopSpeaking : () => speakQuestion()}
-                  className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs font-bold transition-all ${
-                    isSpeaking
-                      ? "border-brand-purple/50 bg-brand-purple/20 text-brand-purple"
-                      : "border-dark-border bg-dark-card text-gray-200 hover:text-white"
-                  }`}
+                  className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-xs font-bold transition-all ${isSpeaking
+                    ? "border-brand-purple/50 bg-brand-purple/20 text-brand-purple"
+                    : "border-dark-border bg-dark-card text-gray-200 hover:text-white"
+                    }`}
                 >
                   {isSpeaking ? (
                     <><VolumeX className="h-4 w-4 animate-pulse" /> Stop AI Voice</>
@@ -828,14 +820,14 @@ export default function MockInterviewPage() {
                   {isSpeaking && <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-purple via-brand-cyan to-brand-purple animate-pulse" />}
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-brand-cyan">
-                      <Sparkles className="h-3.5 w-3.5" />
+                      <Sparkles className="h-4.5 w-3.5" />
                       Interviewer Question
                     </div>
                     {isSpeaking && (
                       <div className="flex items-center gap-0.5">
-                        {[0,1,2,3,4].map((bar) => (
+                        {[0, 1, 2, 3, 4].map((bar) => (
                           <motion.span key={bar}
-                            animate={{ height: ["4px","16px","6px","14px","4px"] }}
+                            animate={{ height: ["4px", "16px", "6px", "14px", "4px"] }}
                             transition={{ repeat: Infinity, duration: 0.8, delay: bar * 0.15 }}
                             className="w-1 rounded-full bg-brand-purple inline-block"
                           />
@@ -905,20 +897,19 @@ export default function MockInterviewPage() {
                           : "Click 'Start Recording' or type your answer here."
                         : "Type a structured answer: definition → key concepts → tradeoffs → real example."
                     }
-                    className={`min-h-52 w-full resize-none rounded-xl border p-4 text-sm leading-6 outline-none transition-all placeholder:text-gray-600 ${
-                      isRecording
-                        ? "border-brand-cyan/50 bg-brand-cyan/5 text-white ring-1 ring-brand-cyan/20"
-                        : "border-dark-border bg-dark-card text-gray-200 focus:border-brand-cyan/50"
-                    } disabled:cursor-not-allowed disabled:opacity-70`}
+                    className={`min-h-52 w-full resize-none rounded-xl border p-4 text-sm leading-6 outline-none transition-all placeholder:text-gray-600 ${isRecording
+                      ? "border-brand-cyan/50 bg-brand-cyan/5 text-white ring-1 ring-brand-cyan/20"
+                      : "border-dark-border bg-dark-card text-gray-200 focus:border-brand-cyan/50"
+                      } disabled:cursor-not-allowed disabled:opacity-70`}
                   />
 
                   {/* Recording visualizer */}
                   {isRecording && (
                     <div className="flex items-center justify-center gap-1.5 py-1">
-                      <span className="text-xs font-medium text-brand-cyan animate-pulse mr-2">Recording…</span>
-                      {[0,1,2,3,4,5,6,7,8,9].map((bar) => (
+                      <span className="h-5.5 text-xs font-medium text-brand-cyan animate-pulse mr-2">Recording…</span>
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((bar) => (
                         <motion.span key={bar}
-                          animate={{ height: ["5px","22px","7px","18px","5px"] }}
+                          animate={{ height: ["5px", "22px", "7px", "18px", "5px"] }}
                           transition={{ repeat: Infinity, duration: 0.65, delay: bar * 0.07 }}
                           className="w-1 rounded-full bg-brand-cyan inline-block"
                         />
@@ -932,11 +923,10 @@ export default function MockInterviewPage() {
                       <button
                         onClick={isRecording ? stopRecording : startRecording}
                         disabled={hasAnsweredCurrent || isEvaluating}
-                        className={`inline-flex h-12 items-center justify-center gap-2.5 rounded-xl border font-bold text-sm px-5 transition-all ${
-                          isRecording
-                            ? "border-red-500/40 bg-red-500/15 text-red-400 animate-pulse"
-                            : "border-dark-border bg-dark-card text-white hover:border-brand-cyan/40"
-                        } disabled:cursor-not-allowed disabled:opacity-50`}
+                        className={`inline-flex h-12 items-center justify-center gap-2.5 rounded-xl border font-bold text-sm px-5 transition-all ${isRecording
+                          ? "border-red-500/40 bg-red-500/15 text-red-400 animate-pulse"
+                          : "border-dark-border bg-dark-card text-white hover:border-brand-cyan/40"
+                          } disabled:cursor-not-allowed disabled:opacity-50`}
                       >
                         {isRecording ? <><MicOff className="h-4 w-4 text-red-400" /> Stop</> : <><Mic className="h-4 w-4 text-brand-cyan" /> Start Recording</>}
                       </button>

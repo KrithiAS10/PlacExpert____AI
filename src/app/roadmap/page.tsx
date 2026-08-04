@@ -90,7 +90,7 @@ interface WeakArea {
 function getAccurateResourceUrl(taskTitle: string, rawUrl: string | null): string {
   const title = taskTitle.toLowerCase();
   
-  if (rawUrl && rawUrl !== "https://roadmap.sh" && rawUrl !== "https://www.geeksforgeeks.org/" && rawUrl.length > 25) {
+  if (rawUrl && rawUrl !== "https://roadmap.sh" && rawUrl !== "https://www.geeksforgeeks.org/" && rawUrl.trim().length > 0) {
     return rawUrl;
   }
 
@@ -475,8 +475,18 @@ interface PlatformMeta {
 
 function resolvePlatform(url: string | null, taskType: string, taskTitle?: string): PlatformMeta {
   const targetUrl = url ? getAccurateResourceUrl(taskTitle || "", url) : "";
+  
+  if (targetUrl.includes("oracle.com")) {
+    return { label: "Oracle Docs", color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20", icon: BookOpen };
+  }
   if (targetUrl.includes("leetcode.com")) {
     return { label: "LeetCode", color: "text-brand-cyan", bg: "bg-brand-cyan/10", border: "border-brand-cyan/20", icon: Code2 };
+  }
+  if (targetUrl.includes("hackerrank.com")) {
+    return { label: "HackerRank", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", icon: Code2 };
+  }
+  if (targetUrl.includes("codechef.com")) {
+    return { label: "CodeChef", color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", icon: Code2 };
   }
   if (targetUrl.includes("freecodecamp.org")) {
     return { label: "freeCodeCamp", color: "text-brand-purple", bg: "bg-brand-purple/10", border: "border-brand-purple/20", icon: BookOpen };
@@ -490,9 +500,52 @@ function resolvePlatform(url: string | null, taskType: string, taskTitle?: strin
   if (targetUrl.includes("w3schools.com")) {
     return { label: "W3Schools", color: "text-brand-teal", bg: "bg-brand-teal/10", border: "border-brand-teal/20", icon: BookOpen };
   }
+  if (targetUrl.includes("baeldung.com")) {
+    return { label: "Baeldung", color: "text-orange-400", bg: "bg-orange-400/10", border: "border-orange-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("spring.io")) {
+    return { label: "Spring Docs", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("developer.mozilla.org")) {
+    return { label: "MDN Web Docs", color: "text-sky-400", bg: "bg-sky-400/10", border: "border-sky-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("programiz.com")) {
+    return { label: "Programiz", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("react.dev") || targetUrl.includes("reactjs.org")) {
+    return { label: "React Docs", color: "text-cyan-400", bg: "bg-cyan-400/10", border: "border-cyan-400/20", icon: Code2 };
+  }
+  if (targetUrl.includes("testbook.com")) {
+    return { label: "Testbook", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("byjus.com")) {
+    return { label: "BYJU'S", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("github.com")) {
+    return { label: "GitHub", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("render.com")) {
+    return { label: "Render Docs", color: "text-teal-400", bg: "bg-teal-400/10", border: "border-teal-400/20", icon: BookOpen };
+  }
+  if (targetUrl.includes("pramp.com")) {
+    return { label: "Pramp", color: "text-indigo-400", bg: "bg-indigo-400/10", border: "border-indigo-400/20", icon: Brain };
+  }
   if (targetUrl === "/mock-interview") {
     return { label: "Mock Interview", color: "text-brand-orange", bg: "bg-brand-orange/10", border: "border-brand-orange/20", icon: Brain };
   }
+
+  // Dynamic domain extractor for any unhandled external URL
+  if (targetUrl && (targetUrl.startsWith("http://") || targetUrl.startsWith("https://"))) {
+    try {
+      const hostname = new URL(targetUrl).hostname.replace(/^www\./, "");
+      const mainDomain = hostname.split(".")[0];
+      const capitalized = mainDomain.charAt(0).toUpperCase() + mainDomain.slice(1);
+      return { label: capitalized, color: "text-brand-cyan", bg: "bg-brand-cyan/10", border: "border-brand-cyan/20", icon: BookOpen };
+    } catch (e) {
+      // fallback
+    }
+  }
+
   // Fallbacks based on task types
   if (taskType === "PROBLEM") {
     return { label: "GeeksforGeeks", color: "text-brand-green", bg: "bg-brand-green/10", border: "border-brand-green/20", icon: BookOpen };
@@ -500,7 +553,7 @@ function resolvePlatform(url: string | null, taskType: string, taskTitle?: strin
   if (taskType === "MOCK") {
     return { label: "Mock Interview", color: "text-brand-orange", bg: "bg-brand-orange/10", border: "border-brand-orange/20", icon: Brain };
   }
-  return { label: "GeeksforGeeks", color: "text-brand-green", bg: "bg-brand-green/10", border: "border-brand-green/20", icon: BookOpen };
+  return { label: "Resource", color: "text-brand-cyan", bg: "bg-brand-cyan/10", border: "border-brand-cyan/20", icon: BookOpen };
 }
 
 export default function RoadmapPage() {
@@ -794,8 +847,11 @@ export default function RoadmapPage() {
         {/* Left Side: Accordion phases */}
         <div className="lg:col-span-2 space-y-3">
           <div className="flex justify-between items-center text-xs text-gray-500 px-1">
-            <span>PREPARATION TRACK</span>
-            <span>{doneTasks}/{allTasks.length} COMPLETED</span>
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>PREPARATION TRACK · {totalDays} DAYS</span>
+            </span>
+            <span>{doneTasks}/{allTasks.length} TASKS COMPLETED</span>
           </div>
 
           <div className="space-y-2">
@@ -842,7 +898,14 @@ export default function RoadmapPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-semibold text-white truncate block">{phase.title}</span>
-                      <p className="text-[10px] text-gray-500">Days {startDay}–{endDay} · {phaseDone}/{phase.tasks.length} done</p>
+                      <p className="text-[10px] text-gray-500 flex items-center gap-1.5">
+                        <Calendar className="w-2.5 h-2.5" />
+                        Days {startDay}–{endDay}
+                        <span className="text-white/20">·</span>
+                        {endDay - startDay + 1} day{endDay - startDay + 1 !== 1 ? "s" : ""}
+                        <span className="text-white/20">·</span>
+                        {phaseDone}/{phase.tasks.length} done
+                      </p>
                     </div>
                     <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
                   </button>
@@ -860,10 +923,18 @@ export default function RoadmapPage() {
                         <div className="divide-y divide-white/[0.03]">
                           {[...phase.tasks].sort((a, b) => a.day - b.day).map((task) => {
                             const globalIdx = allTasks.findIndex((t) => t.id === task.id);
+                            const previousCourseEndDay = allTasks[globalIdx - 1]?.day ?? 0;
+                            const courseStartDay = previousCourseEndDay + 1;
+                            const durationDays = Math.max(1, task.day - previousCourseEndDay);
                             const isLocked = firstPendingIdx !== -1 && globalIdx > firstPendingIdx;
+                            const courseDay = task.status === "COMPLETED"
+                              ? durationDays
+                              : isLocked
+                              ? 0
+                              : Math.min(durationDays, Math.max(1, user.currentDay - courseStartDay + 1));
                             const isToday = !isLocked && todayTask && task.id === todayTask.id;
                             const isDone  = task.status === "COMPLETED";
-                            const pMeta   = resolvePlatform(task.description, task.type);
+                            const pMeta   = resolvePlatform(task.description, task.type, task.title);
                             const PlatformIcon = pMeta.icon;
 
                             return (
@@ -885,11 +956,19 @@ export default function RoadmapPage() {
                                       <span className="text-[8px] text-gray-500 font-bold">{task.day}</span>
                                     </div>
                                   )}
-                                  <span className={`text-xs font-medium truncate ${
-                                    isDone ? "text-gray-600 line-through" : isLocked ? "text-gray-600 select-none cursor-not-allowed" : "text-gray-300"
-                                  }`}>
-                                    {task.title}
-                                  </span>
+                                  <div className="flex flex-col min-w-0">
+                                    <span className={`text-xs font-medium truncate ${
+                                      isDone ? "text-gray-600 line-through" : isLocked ? "text-gray-600 select-none cursor-not-allowed" : "text-gray-300"
+                                    }`}>
+                                      {task.title}
+                                    </span>
+                                    <span className={`text-[9px] flex items-center gap-0.5 ${
+                                      isLocked ? "text-gray-700" : isDone ? "text-gray-600" : isToday ? "text-brand-cyan/70" : "text-gray-600"
+                                    }`}>
+                                      <Calendar className="w-2 h-2" />
+                                      {isToday ? "Today — " : ""}{courseDay}/{durationDays} day{durationDays !== 1 ? "s" : ""} completed
+                                    </span>
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center gap-2 shrink-0">
@@ -901,12 +980,12 @@ export default function RoadmapPage() {
                                   </span>
                                   {task.description && !isLocked && (
                                     <a
-                                      href={task.description}
+                                      href={getAccurateResourceUrl(task.title, task.description)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       onClick={() => handleLinkVisit(task.id)}
                                       className="p-1 rounded-md bg-white/5 border border-white/10 hover:text-brand-cyan hover:border-brand-cyan/20 transition-all text-gray-500"
-                                      title={`Solve on ${pMeta.label}`}
+                                      title={`Solve/Study on ${pMeta.label}`}
                                     >
                                       <ExternalLink className="w-3 h-3" />
                                     </a>
@@ -949,15 +1028,17 @@ export default function RoadmapPage() {
               </div>
             </div>
           ) : todayTask ? (() => {
-            const pMeta = resolvePlatform(todayTask.description, todayTask.type);
+            const pMeta = resolvePlatform(todayTask.description, todayTask.type, todayTask.title);
             const PlatformIcon = pMeta.icon;
             const linkVisited = Boolean(visitedLinks[todayTask.id]);
+            const activeTaskIndex = allTasks.findIndex((task) => task.id === todayTask.id);
+            const activeCourseStartDay = (allTasks[activeTaskIndex - 1]?.day ?? 0) + 1;
             return (
               <div className="relative overflow-hidden rounded-xl border border-brand-cyan/20 bg-gradient-to-br from-brand-cyan/10 via-brand-blue/5 to-transparent p-4">
                 <div className="absolute -top-6 -right-6 w-24 h-24 bg-brand-cyan/5 blur-3xl pointer-events-none" />
                 <div className="relative space-y-3">
                   <div className="flex justify-between items-center text-[10px] font-bold">
-                    <span className="text-brand-cyan uppercase tracking-widest">ACTIVE TASK · DAY {todayTask.day}</span>
+                    <span className="text-brand-cyan uppercase tracking-widest">ACTIVE TASK · DAY {activeCourseStartDay}</span>
                     <span className={`px-2 py-0.5 rounded-full border flex items-center gap-1 ${pMeta.color} ${pMeta.bg} ${pMeta.border}`}>
                       <PlatformIcon className="w-2.5 h-2.5" />
                       {pMeta.label}
@@ -1333,21 +1414,6 @@ export default function RoadmapPage() {
                     </p>
                   </div>
                 </div>
-
-                {/* Accurate GeeksforGeeks / Tutorial link */}
-                <a
-                  href={accurateUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleLinkVisit(todayTask.id)}
-                  className="w-full py-2 px-3 bg-brand-green/10 border border-brand-green/30 text-brand-green font-bold rounded-xl flex items-center justify-between text-xs hover:bg-brand-green/20 transition-all"
-                >
-                  <span className="flex items-center gap-1.5 truncate">
-                    <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                    Open exact article on GeeksforGeeks
-                  </span>
-                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-                </a>
 
                 {/* Question */}
                 <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">

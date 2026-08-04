@@ -26,6 +26,9 @@ interface PredictionResult {
   readiness: string;
   readiness_confidence: Record<string, number>;
   domain_mapping: Record<string, number>;
+  predictedRole?: string;
+  predictedDomain?: string;
+  roadmap?: any;
 }
 
 const steps = [
@@ -312,7 +315,7 @@ export default function ProfilingPage() {
       .slice(0, 6) as [string, number][];
 
     const confidence = Math.round((predictionResult.readiness_confidence?.[predictionResult.readiness] || 0) * 100);
-    const topDomain  = topDomains[0]?.[0] ?? answers.domain ?? "Full Stack";
+    const topDomain  = predictionResult.predictedDomain || (answers.domain && answers.domain !== "Not Decided" ? answers.domain : topDomains[0]?.[0]) || "Full Stack";
 
     const readinessColors: Record<string, string> = {
       "Just Starting":         "text-brand-red",
