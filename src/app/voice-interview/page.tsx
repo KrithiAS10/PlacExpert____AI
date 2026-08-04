@@ -1,28 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Brain,
-  CheckCircle2,
-  Mic,
-  MicOff,
-  Play,
-  RotateCcw,
-  Send,
-  Volume2,
-} from "lucide-react";
+import { useState, useMemo } from "react";
+import { Mic, MicOff, Send, Play, RotateCcw, Volume2, Brain, CheckCircle2 } from "lucide-react";
 import { voiceInterviewQuestions, type VoiceInterviewQuestion } from "@/lib/voice-interview-data";
 
 type SpeechRecognitionEventLike = {
-  results: {
-    length: number;
-    [index: number]: {
-      isFinal: boolean;
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
+  results: { length: number; [index: number]: { [index: number]: { transcript: string } } };
 };
 
 type SpeechRecognitionLike = {
@@ -479,4 +462,3 @@ export default function VoiceInterviewPage() {
     </div>
   );
 }
-
