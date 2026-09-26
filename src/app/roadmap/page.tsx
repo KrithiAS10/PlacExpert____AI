@@ -150,317 +150,11 @@ function getAccurateResourceUrl(taskTitle: string, rawUrl: string | null): strin
   return "https://www.geeksforgeeks.org/explore";
 }
 
-// ─────────────────────────────────────────────
-// Interactive Topic Checkpoint Question Bank
-// ─────────────────────────────────────────────
-interface CheckpointQuestion {
-  q: string;
-  options: string[];
-  correct: number;
-  explanation: string;
-}
-
-const CHECKPOINT_QUESTION_BANK: Record<string, CheckpointQuestion[]> = {
-  java_setup: [
-    { q: "Which CLI tool in the JDK compiles Java source files (.java) into bytecode (.class)?", options: ["java", "javac", "javadoc", "jar"], correct: 1, explanation: "javac (Java Compiler) reads .java source code files and compiles them into .class bytecode." },
-    { q: "What should the JAVA_HOME environment variable point to?", options: ["The JRE bin directory", "The root directory of your installed JDK", "The System32 directory", "The C:\\Users home folder"], correct: 1, explanation: "JAVA_HOME must point to the root directory where the JDK is installed." },
-    { q: "Which Java component executes compiled bytecode on any host operating system?", options: ["JVM (Java Virtual Machine)", "JDK Compiler", "JavaFX Engine", "Maven"], correct: 0, explanation: "The JVM is the engine that provides the runtime environment to execute Java bytecode." },
-    { q: "What file extension do compiled Java bytecode files have?", options: [".exe", ".jar", ".class", ".java"], correct: 2, explanation: "Java compiler generates .class files containing JVM bytecode." },
-    { q: "Which IDE is widely considered the industry standard for modern enterprise Java development?", options: ["Notepad++", "IntelliJ IDEA", "Turbo C++", "Sublime Text"], correct: 1, explanation: "IntelliJ IDEA by JetBrains is widely used for Java development." }
-  ],
-  python_setup: [
-    { q: "Which built-in module creates isolated virtual environments in Python 3?", options: ["pip", "venv", "pyenv", "conda"], correct: 1, explanation: "python -m venv creates an isolated virtual environment." },
-    { q: "Which command installs third-party packages from PyPI?", options: ["pip install <package>", "python get <package>", "npm install <package>", "apt-get python-<package>"], correct: 0, explanation: "pip is the official package installer for Python." },
-    { q: "Which standard file lists project Python package dependencies?", options: ["package.json", "requirements.txt", "Pipfile.lock", "setup.py"], correct: 1, explanation: "requirements.txt lists dependencies for pip install -r requirements.txt." },
-    { q: "How do you run a Python script named app.py from terminal?", options: ["exec app.py", "python app.py", "run app.py", "compile app.py"], correct: 1, explanation: "python app.py executes the script through the Python interpreter." },
-    { q: "What is PEP 8 in the Python ecosystem?", options: ["A performance compiler", "The official style guide for Python code formatting", "A virtual machine spec", "A database connector"], correct: 1, explanation: "PEP 8 provides guidelines and best practices for writing clean Python code." }
-  ],
-  cpp_setup: [
-    { q: "Which command invokes the GNU C++ compiler to compile main.cpp?", options: ["gcc main.cpp", "g++ main.cpp -o main", "cpp main.cpp", "make main.cpp"], correct: 1, explanation: "g++ is the standard GNU C++ compiler command." },
-    { q: "Which header file must be included for std::cout and std::cin?", options: ["<stdio.h>", "<iostream>", "<stdlib.h>", "<math.h>"], correct: 1, explanation: "<iostream> defines standard input/output stream objects." },
-    { q: "What extension is standard for C++ source code files?", options: [".c", ".cpp", ".class", ".cs"], correct: 1, explanation: ".cpp (or .cc / .cxx) is standard for C++ source files." },
-    { q: "Which keyword brings standard C++ library symbols into the global namespace?", options: ["import std;", "using namespace std;", "include <std>", "package std;"], correct: 1, explanation: "using namespace std; imports the std namespace." },
-    { q: "What tool automates cross-platform building of large C++ projects?", options: ["CMake", "npm", "pip", "Gradle"], correct: 0, explanation: "CMake generates platform-native build files for C++." }
-  ],
-  web_setup: [
-    { q: "Which HTML5 semantic tag defines navigation links?", options: ["<section>", "<nav>", "<aside>", "<div>"], correct: 1, explanation: "<nav> is the semantic element for major navigation blocks." },
-    { q: "In the CSS Box Model, what sits directly between the element content and border?", options: ["Margin", "Padding", "Outline", "Gap"], correct: 1, explanation: "Box Model order from inside out: Content -> Padding -> Border -> Margin." },
-    { q: "Which CSS Flexbox property aligns items along the main axis?", options: ["align-items", "justify-content", "align-content", "flex-direction"], correct: 1, explanation: "justify-content aligns items along the main axis." },
-    { q: "Which JavaScript keyword declares a variable scoped to its block that cannot be reassigned?", options: ["var", "let", "const", "static"], correct: 2, explanation: "const creates a block-scoped, read-only constant." },
-    { q: "What method adds an event listener to an HTML DOM element?", options: ["element.attachEvent()", "element.addEventListener()", "element.on()", "element.bind()"], correct: 1, explanation: "addEventListener() attaches event handler functions." }
-  ],
-  arrays: [
-    { q: "What is the time complexity to access an element by index in an array?", options: ["O(n)", "O(log n)", "O(1)", "O(n²)"], correct: 2, explanation: "Arrays provide O(1) constant time random access by index." },
-    { q: "The Two-Pointer technique on a sorted array can find pair sums in:", options: ["O(n²)", "O(n)", "O(log n)", "O(n log n)"], correct: 1, explanation: "Two pointers move inwards from opposite ends in linear O(n) time." },
-    { q: "What does the Sliding Window technique optimize?", options: ["Space complexity only", "Time complexity from O(n²) to O(n) for contiguous subarray problems", "Tree height", "Graph cycles"], correct: 1, explanation: "Sliding window avoids recomputing sums/states for overlapping subarrays." },
-    { q: "In a 0-indexed array of length N, what is the index of the last element?", options: ["N", "N - 1", "N + 1", "1"], correct: 1, explanation: "Indices range from 0 to N-1." },
-    { q: "Prefix Sum array allows calculating any range sum query [L, R] in:", options: ["O(1) time", "O(N) time", "O(R - L) time", "O(log N) time"], correct: 0, explanation: "Range sum = Prefix[R] - Prefix[L-1] in constant time O(1)." }
-  ],
-  strings: [
-    { q: "Which technique checks if a string is a palindrome in O(n) time and O(1) space?", options: ["Stack reversal", "Two pointers from start and end moving inwards", "Generating all permutations", "Regex matching"], correct: 1, explanation: "Two pointers compare s[left] and s[right] moving towards the center." },
-    { q: "Two strings are anagrams if they:", options: ["Have the same length only", "Contain the exact same character frequencies", "Start with the same letter", "Have the same hash code only"], correct: 1, explanation: "Anagrams contain identical characters in different orders." },
-    { q: "What is the time complexity of the KMP pattern matching algorithm?", options: ["O(N * M)", "O(N + M)", "O(N²)", "O(log N)"], correct: 1, explanation: "KMP avoids backtracking by building the LPS array in O(N + M) time." },
-    { q: "What is the ASCII value of uppercase letter 'A'?", options: ["97", "65", "48", "90"], correct: 1, explanation: "ASCII 'A' is 65; lowercase 'a' is 97." },
-    { q: "Which approach finds all substrings of length N in a string?", options: ["O(N²) nested loops", "O(N) single loop", "O(2ⁿ)", "O(1)"], correct: 0, explanation: "There are N*(N+1)/2 total substrings, requiring O(N²) time." }
-  ],
-  linked_lists: [
-    { q: "Inserting a node at the head of a Singly Linked List takes:", options: ["O(n)", "O(1)", "O(log n)", "O(n²)"], correct: 1, explanation: "Updating newNode.next = head and head = newNode takes O(1) time." },
-    { q: "A Doubly Linked List node contains:", options: ["Only a data value", "Data and a Next pointer", "Data, Next pointer, and Prev pointer", "Data and a parent pointer"], correct: 2, explanation: "Doubly linked nodes store data, next node pointer, and prev node pointer." },
-    { q: "Floyd's Cycle Detection algorithm uses:", options: ["A Hash Set", "Fast & Slow Pointers (Tortoise & Hare)", "Recursion", "Binary Search"], correct: 1, explanation: "If a cycle exists, the fast pointer (2 steps) will meet the slow pointer (1 step)." },
-    { q: "Finding the middle node of a linked list in one pass requires:", options: ["Counting total nodes first", "Fast & Slow pointers (slow moves 1 step, fast moves 2 steps)", "Reversing the list", "Sorting"], correct: 1, explanation: "When fast reaches the end, slow will be at the exact middle node." },
-    { q: "Reversing a Singly Linked List iteratively requires keeping track of:", options: ["Prev, Curr, and Next pointers", "Left and Right pointers", "Head and Tail only", "Stack size"], correct: 0, explanation: "Updating curr.next = prev requires saving next = curr.next first." }
-  ],
-  stacks_queues: [
-    { q: "Which ordering principle does a Stack follow?", options: ["FIFO (First In First Out)", "LIFO (Last In First Out)", "Priority Based", "Random Access"], correct: 1, explanation: "Stack is Last-In-First-Out." },
-    { q: "Which ordering principle does a Queue follow?", options: ["LIFO", "FIFO (First In First Out)", "Sorted order", "LILO only"], correct: 1, explanation: "Queue is First-In-First-Out." },
-    { q: "Evaluating postfix mathematical expressions (e.g., 3 4 +) uses which structure?", options: ["Queue", "Stack", "Binary Tree", "Heap"], correct: 1, explanation: "Operands are pushed onto a stack; operators pop 2 operands and push the result." },
-    { q: "In a Queue, new elements are inserted at the:", options: ["Front (Dequeue)", "Rear (Enqueue)", "Middle", "Random position"], correct: 1, explanation: "Enqueue inserts at the rear; Dequeue removes from the front." },
-    { q: "Which algorithm uses a Queue for level-by-level traversal?", options: ["Depth-First Search (DFS)", "Breadth-First Search (BFS)", "Binary Search", "Quick Sort"], correct: 1, explanation: "BFS uses a Queue to visit all neighbors level by level." }
-  ],
-  trees_graphs: [
-    { q: "In a valid Binary Search Tree (BST), the left child value is always:", options: ["Greater than the root", "Smaller than the root node", "Equal to the right child", "Any value"], correct: 1, explanation: "BST property: Left < Node < Right." },
-    { q: "Which graph traversal strategy uses recursion or an explicit Stack?", options: ["Breadth-First Search (BFS)", "Depth-First Search (DFS)", "Dijkstra's Algorithm", "Kruskal's Algorithm"], correct: 1, explanation: "DFS goes deep along paths using a Stack or call stack." },
-    { q: "Dijkstra's Shortest Path algorithm fails when the graph has:", options: ["Cycles", "Negative edge weights", "Multiple components", "Directed edges"], correct: 1, explanation: "Dijkstra assumes non-negative edge weights; use Bellman-Ford for negative weights." },
-    { q: "Topological Sorting can only be applied to:", options: ["Undirected graphs", "Directed Acyclic Graphs (DAG)", "Complete graphs", "Bipartite graphs"], correct: 1, explanation: "Topological sort requires a DAG with no directed cycles." },
-    { q: "Inorder traversal of a Binary Search Tree (BST) visits nodes in:", options: ["Random order", "Sorted ascending order", "Descending order", "Reverse level order"], correct: 1, explanation: "Inorder (Left -> Root -> Right) on a BST yields sorted elements." }
-  ],
-  dp_greedy: [
-    { q: "Dynamic Programming is applicable when a problem exhibits:", options: ["Greedy choices only", "Overlapping subproblems & Optimal substructure", "No base cases", "Linear time complexity"], correct: 1, explanation: "DP solves overlapping subproblems once and stores their solutions." },
-    { q: "Memoization refers to:", options: ["Bottom-up DP table filling", "Top-down recursion with caching", "Stack frames", "Sorting array"], correct: 1, explanation: "Memoization caches recursive function return values." },
-    { q: "Tabulation DP approach is built:", options: ["Top-down", "Bottom-up iteratively filling a DP table", "Using recursion only", "Randomly"], correct: 1, explanation: "Tabulation fills base cases first and iterates up to N." },
-    { q: "The 0/1 Knapsack problem with N items and Capacity W has time complexity:", options: ["O(N log N)", "O(N * W)", "O(2ⁿ)", "O(W²)"], correct: 1, explanation: "Standard DP table size is N x W." },
-    { q: "Greedy algorithms make choices that are:", options: ["Locally optimal at each step hoping for global optimum", "Globally optimal first", "Recursive always", "Backtracking based"], correct: 0, explanation: "Greedy picks the best immediate choice without looking back." }
-  ],
-  dbms_sql: [
-    { q: "Which SQL clause filters aggregated results produced by GROUP BY?", options: ["WHERE", "HAVING", "FILTER", "ORDER BY"], correct: 1, explanation: "HAVING filters groups post-aggregation; WHERE filters individual rows pre-aggregation." },
-    { q: "Which SQL JOIN returns all rows from the left table regardless of matches in the right table?", options: ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"], correct: 1, explanation: "LEFT JOIN retains all left records." },
-    { q: "In ACID properties, 'Atomicity' guarantees:", options: ["Data is isolated from other transactions", "Transactions are All-or-Nothing", "Data persists after crash", "Types are consistent"], correct: 1, explanation: "Atomicity ensures every operation in a transaction succeeds or all are rolled back." },
-    { q: "Which Normal Form eliminates transitive functional dependencies?", options: ["1NF", "2NF", "3NF", "BCNF"], correct: 2, explanation: "3NF removes transitive dependencies (X -> Y and Y -> Z)." },
-    { q: "Which database indexing data structure is optimized for disk reads and range queries?", options: ["Binary Search Tree", "B+ Tree", "Linked List", "Hash Map"], correct: 1, explanation: "B+ Trees store keys in leaves linked sequentially for fast range scans." }
-  ],
-  os: [
-    { q: "A process in an operating system is best defined as:", options: ["A file on disk", "A program in active execution", "A hardware component", "A thread pool"], correct: 1, explanation: "A process is an instance of a computer program being executed." },
-    { q: "Which CPU scheduling algorithm can lead to the Convoy Effect?", options: ["Round Robin", "First-Come, First-Served (FCFS)", "Shortest Remaining Time First", "Multilevel Queue"], correct: 1, explanation: "Short processes wait behind a long CPU-bound process in FCFS." },
-    { q: "Which condition is NOT one of the 4 necessary conditions for Deadlock?", options: ["Mutual Exclusion", "Hold and Wait", "No Preemption", "Circular Preemption"], correct: 3, explanation: "The 4 Coffman conditions are: Mutual Exclusion, Hold & Wait, No Preemption, Circular Wait." },
-    { q: "Paging in OS memory management eliminates:", options: ["Internal Fragmentation", "External Fragmentation", "Page Faults", "Cache Misses"], correct: 1, explanation: "Paging allocates non-contiguous fixed-size physical frames." },
-    { q: "A context switch saves the CPU state in which data structure?", options: ["Stack", "PCB (Process Control Block)", "Page Table", "Inode"], correct: 1, explanation: "PCB holds process ID, registers, program counter, and scheduling info." }
-  ],
-  cn: [
-    { q: "Which layer of the OSI model handles logical IP routing across networks?", options: ["Data Link Layer (Layer 2)", "Network Layer (Layer 3)", "Transport Layer (Layer 4)", "Session Layer (Layer 5)"], correct: 1, explanation: "Layer 3 (Network Layer) manages IP addressing and packet routing." },
-    { q: "TCP provides which guarantees that UDP does NOT?", options: ["Lower latency", "Reliable, ordered, error-checked data stream", "Multicast support", "Zero packet overhead"], correct: 1, explanation: "TCP guarantees delivery and ordering via sequence numbers and ACKs." },
-    { q: "Why is UDP preferred over TCP for live video streaming and gaming?", options: ["It encrypts data automatically", "Low latency without blocking on retransmissions", "Higher bandwidth", "No port numbers"], correct: 1, explanation: "UDP avoids delay caused by retransmitting lost packets." },
-    { q: "Which protocol translates human-readable domain names to IP addresses?", options: ["DHCP", "DNS", "ARP", "FTP"], correct: 1, explanation: "DNS (Domain Name System) resolves hostnames to IP addresses." },
-    { q: "What is the standard port for HTTPS encrypted traffic?", options: ["80", "443", "22", "8080"], correct: 1, explanation: "Port 443 is standard for HTTPS; 80 is HTTP." }
-  ],
-  oop: [
-    { q: "Binding data fields and methods into a single unit while restricting direct access is:", options: ["Inheritance", "Encapsulation", "Polymorphism", "Abstraction"], correct: 1, explanation: "Encapsulation hides internal implementation using private fields and getters/setters." },
-    { q: "Which SOLID principle states classes should be open for extension but closed for modification?", options: ["Single Responsibility Principle", "Open/Closed Principle", "Liskov Substitution", "Dependency Inversion"], correct: 1, explanation: "Open/Closed Principle (OCP)." },
-    { q: "Method Overriding in OOP is an example of:", options: ["Compile-time Polymorphism", "Run-time (Dynamic) Polymorphism", "Data Hiding", "Multiple Inheritance"], correct: 1, explanation: "Overridden methods are dispatched dynamically at runtime based on object type." },
-    { q: "A Singleton Design Pattern guarantees:", options: ["Multiple thread-safe instances", "Exactly one instance of a class with a global point of access", "Static classes only", "Interface inheritance"], correct: 1, explanation: "Singleton restricts instantiation to a single object." },
-    { q: "An abstract class differs from an interface because an abstract class can:", options: ["Have constructors and non-abstract instance fields", "Be instantiated directly", "Be inherited by multiple child classes in Java", "Not contain methods"], correct: 0, explanation: "Abstract classes can hold state and concrete method implementations." }
-  ],
-  react: [
-    { q: "Which React Hook declares a local state variable in a functional component?", options: ["useEffect", "useState", "useContext", "useRef"], correct: 1, explanation: "const [state, setState] = useState(initialValue);" },
-    { q: "Which React Hook executes side-effects like data fetching after rendering?", options: ["useMemo", "useEffect", "useCallback", "useReducer"], correct: 1, explanation: "useEffect runs side-effects after component render." },
-    { q: "Why are 'key' props necessary when mapping lists in React?", options: ["For CSS styling", "To help React track item identity for efficient DOM diffing", "To enable event handlers", "To validate TypeScript types"], correct: 1, explanation: "Keys give elements a stable identity across re-renders." },
-    { q: "Props passed to a React component are:", options: ["Mutable within the child", "Read-only (immutable)", "Global state variables", "Database queries"], correct: 1, explanation: "Props flow top-down and must not be mutated by child components." },
-    { q: "Which React feature avoids 'prop drilling' through multiple layout levels?", options: ["Redux store only", "Context API", "React Router", "Higher Order Components"], correct: 1, explanation: "Context passes data through the tree without explicitly passing props at every level." }
-  ],
-  system_design: [
-    { q: "Horizontal scaling (Scale-out) means:", options: ["Adding CPU/RAM to a single machine", "Adding more commodity servers to distribute traffic", "Using SSDs instead of HDDs", "Optimizing SQL queries"], correct: 1, explanation: "Horizontal scaling adds more instances to a cluster." },
-    { q: "What component sits between clients and backend servers to distribute incoming traffic?", options: ["Database Index", "Load Balancer", "Reverse Proxy Cache", "API Gateway"], correct: 1, explanation: "Load Balancers distribute network/application traffic across servers." },
-    { q: "A Content Delivery Network (CDN) speeds up static asset loading by:", options: ["Caching content geographically closer to users", "Compressing database rows", "Using faster CPU servers", "Encrypting passwords"], correct: 0, explanation: "CDNs serve assets from edge servers nearest to the client." },
-    { q: "In CAP Theorem, what does 'C' stand for?", options: ["Capacity", "Consistency", "Concurrency", "Commit"], correct: 1, explanation: "CAP = Consistency, Availability, Partition Tolerance." },
-    { q: "In-memory caches like Redis improve performance by:", options: ["Storing data on NVMe drives", "Serving frequent queries directly from RAM in microseconds", "Compiling JavaScript", "Sharding relational tables"], correct: 1, explanation: "RAM access is order of magnitude faster than disk I/O." }
-  ],
-  generic: [
-    { q: "What does Big-O notation measure?", options: ["Lines of code", "How execution time or memory grows relative to input size N", "Network bandwidth", "CPU temperature"], correct: 1, explanation: "Big-O characterizes algorithm efficiency as N approaches infinity." },
-    { q: "What MUST a recursive function include to avoid a Stack Overflow error?", options: ["A while loop", "A Base Case", "Global variables", "A try-catch block"], correct: 1, explanation: "A base case terminates recursive self-calls." },
-    { q: "Average case time complexity for searching a key in a Hash Table is:", options: ["O(N)", "O(1)", "O(log N)", "O(N²)"], correct: 1, explanation: "Hash tables provide average O(1) key lookup." },
-    { q: "Which data structure follows Last-In-First-Out (LIFO) ordering?", options: ["Queue", "Stack", "Heap", "Tree"], correct: 1, explanation: "Stack is LIFO." },
-    { q: "Which data structure follows First-In-First-Out (FIFO) ordering?", options: ["Stack", "Queue", "Set", "Graph"], correct: 1, explanation: "Queue is FIFO." }
-  ]
-};
-
-function getCheckpointQuestionsForTask(task: Task): CheckpointQuestion[] {
-  const t = task.title.toLowerCase();
-  
-  if (t.includes("java") && (t.includes("setup") || t.includes("environment") || t.includes("ide") || t.includes("install"))) {
-    return CHECKPOINT_QUESTION_BANK.java_setup;
-  }
-  if (t.includes("python") && (t.includes("setup") || t.includes("environment") || t.includes("ide"))) {
-    return CHECKPOINT_QUESTION_BANK.python_setup;
-  }
-  if (t.includes("c++") && (t.includes("setup") || t.includes("environment") || t.includes("ide"))) {
-    return CHECKPOINT_QUESTION_BANK.cpp_setup;
-  }
-  if (t.includes("set up") || t.includes("setup") || t.includes("environment") || t.includes("ide") || t.includes("web") || t.includes("html") || t.includes("git")) {
-    return CHECKPOINT_QUESTION_BANK.web_setup;
-  }
-  if (t.includes("array") || t.includes("two pointer") || t.includes("sliding")) {
-    return CHECKPOINT_QUESTION_BANK.arrays;
-  }
-  if (t.includes("string") || t.includes("palindrome") || t.includes("anagram")) {
-    return CHECKPOINT_QUESTION_BANK.strings;
-  }
-  if (t.includes("linked list")) {
-    return CHECKPOINT_QUESTION_BANK.linked_lists;
-  }
-  if (t.includes("stack") || t.includes("queue")) {
-    return CHECKPOINT_QUESTION_BANK.stacks_queues;
-  }
-  if (t.includes("tree") || t.includes("graph") || t.includes("bfs") || t.includes("dfs") || t.includes("dijkstra")) {
-    return CHECKPOINT_QUESTION_BANK.trees_graphs;
-  }
-  if (t.includes("dp") || t.includes("dynamic") || t.includes("knapsack") || t.includes("greedy")) {
-    return CHECKPOINT_QUESTION_BANK.dp_greedy;
-  }
-  if (t.includes("sql") || t.includes("dbms") || t.includes("database") || t.includes("normalization")) {
-    return CHECKPOINT_QUESTION_BANK.dbms_sql;
-  }
-  if (t.includes("process") || t.includes("thread") || t.includes("os") || t.includes("scheduling") || t.includes("deadlock")) {
-    return CHECKPOINT_QUESTION_BANK.os;
-  }
-  if (t.includes("tcp") || t.includes("udp") || t.includes("osi") || t.includes("dns") || t.includes("network")) {
-    return CHECKPOINT_QUESTION_BANK.cn;
-  }
-  if (t.includes("class") || t.includes("oop") || t.includes("encapsulat") || t.includes("inherit") || t.includes("solid")) {
-    return CHECKPOINT_QUESTION_BANK.oop;
-  }
-  if (t.includes("react")) {
-    return CHECKPOINT_QUESTION_BANK.react;
-  }
-  if (t.includes("system design") || t.includes("load balancer") || t.includes("cdn") || t.includes("scaling")) {
-    return CHECKPOINT_QUESTION_BANK.system_design;
-  }
-
-  return CHECKPOINT_QUESTION_BANK.generic;
-}
-
-// ─────────────────────────────────────────────
-// Topic Quiz Question Bank (FreeCodeCamp-style)
-// ─────────────────────────────────────────────
-interface QuizQuestion {
-  q: string;
-  options: string[];
-  correct: number; // index
-}
-
-const QUESTION_BANK: Record<string, QuizQuestion[]> = {
-  // Arrays
-  default_arrays: [
-    { q: "What is the time complexity of accessing an element by index in an array?", options: ["O(n)", "O(log n)", "O(1)", "O(n²)"], correct: 2 },
-    { q: "Which of the following sorting algorithms has the best average-case time complexity?", options: ["Bubble Sort — O(n²)", "Quick Sort — O(n log n)", "Insertion Sort — O(n²)", "Selection Sort — O(n²)"], correct: 1 },
-    { q: "The Two-Pointer technique is most useful for problems on:", options: ["Binary Trees", "Sorted Arrays or Linked Lists", "Graph traversal", "Hash Maps"], correct: 1 },
-    { q: "Which data structure uses LIFO (Last-In-First-Out) ordering?", options: ["Queue", "Heap", "Stack", "Deque"], correct: 2 },
-    { q: "What does the Sliding Window technique reduce?", options: ["Space complexity from O(n²) to O(1)", "Time complexity from O(n²) to O(n)", "The number of recursive calls", "Graph cycles"], correct: 1 },
-    { q: "Binary Search requires the array to be:", options: ["Sorted", "Reversed", "Of even length", "Containing unique elements only"], correct: 0 },
-  ],
-  default_strings: [
-    { q: "What is the time complexity of the KMP string matching algorithm?", options: ["O(n²)", "O(n·m)", "O(n + m)", "O(log n)"], correct: 2 },
-    { q: "A palindrome reads the same forwards and backwards. Which check is O(n)?", options: ["Using a Stack", "Two-Pointer from both ends", "Building all substrings", "Comparing hash codes"], correct: 1 },
-    { q: "An anagram of 'listen' is:", options: ["silent", "tinsel", "enlist", "All of the above"], correct: 3 },
-    { q: "Which approach finds ALL substrings of a string in O(n²)?", options: ["Trie traversal", "Nested loop over start/end indices", "KMP preprocessing", "Binary Search"], correct: 1 },
-    { q: "ASCII value of character 'A' is:", options: ["97", "65", "48", "90"], correct: 1 },
-    { q: "Which Python built-in checks if a string contains only alphanumeric chars?", options: ["str.isalpha()", "str.isdigit()", "str.isalnum()", "str.isnumeric()"], correct: 2 },
-  ],
-  default_graphs: [
-    { q: "BFS uses which data structure internally?", options: ["Stack", "Heap", "Queue", "Deque"], correct: 2 },
-    { q: "Dijkstra's algorithm does NOT work correctly when:", options: ["Graph has cycles", "Graph has negative weight edges", "Graph is directed", "Graph is dense"], correct: 1 },
-    { q: "Topological sort applies to which type of graph?", options: ["Undirected Weighted", "Directed Acyclic Graph (DAG)", "Directed Cyclic Graph", "Complete Bipartite"], correct: 1 },
-    { q: "The time complexity of BFS / DFS on a graph with V vertices and E edges is:", options: ["O(V²)", "O(V + E)", "O(E log V)", "O(V log E)"], correct: 1 },
-    { q: "Which algorithm detects negative cycles in a graph?", options: ["Dijkstra", "Prim's", "Bellman-Ford", "Floyd-Warshall (also correct but pick the standard answer)"], correct: 2 },
-    { q: "In DFS, when do we use a visited[] array?", options: ["To store parent nodes", "To avoid revisiting already explored nodes", "To count connected components only", "It is optional"], correct: 1 },
-  ],
-  default_dp: [
-    { q: "Dynamic Programming is applicable when a problem has:", options: ["Greedy substructure only", "Overlapping subproblems and optimal substructure", "No base cases", "Only linear recurrences"], correct: 1 },
-    { q: "Memoization refers to:", options: ["Bottom-up DP with a table", "Top-down recursion with caching", "Storing the call stack", "Graph coloring"], correct: 1 },
-    { q: "The 0/1 Knapsack problem has time complexity:", options: ["O(n log n)", "O(2ⁿ) naive, O(n·W) with DP", "O(n²)", "O(W²)"], correct: 1 },
-    { q: "LCS stands for:", options: ["Longest Common Substring", "Longest Contiguous Sequence", "Longest Common Subsequence", "Lexical Character Span"], correct: 2 },
-    { q: "Fibonacci(n) using DP (bottom-up) reduces time from O(2ⁿ) to:", options: ["O(n log n)", "O(n)", "O(log n)", "O(n²)"], correct: 1 },
-    { q: "Which of these is a classic DP problem?", options: ["Merge Sort", "Coin Change Problem", "Binary Search", "Heap Sort"], correct: 1 },
-  ],
-  default_dbms: [
-    { q: "ACID stands for:", options: ["Atomicity, Consistency, Isolation, Durability", "Access, Control, Insert, Delete", "Aggregate, Condition, Index, Data", "None of the above"], correct: 0 },
-    { q: "Which normal form eliminates transitive functional dependencies?", options: ["1NF", "2NF", "3NF", "BCNF"], correct: 2 },
-    { q: "A PRIMARY KEY constraint ensures:", options: ["NULL values only", "Uniqueness and NOT NULL", "Foreign key referencing", "Duplicate values allowed"], correct: 1 },
-    { q: "SQL JOIN that returns all records from both tables, matching where possible:", options: ["INNER JOIN", "LEFT JOIN", "RIGHT JOIN", "FULL OUTER JOIN"], correct: 3 },
-    { q: "An index in a database primarily improves:", options: ["Write performance", "Read/Query performance", "Storage efficiency", "Data encryption"], correct: 1 },
-    { q: "The 'isolation' property in ACID prevents:", options: ["Data loss", "Dirty reads and uncommitted data exposure between concurrent transactions", "Schema changes", "Index fragmentation"], correct: 1 },
-  ],
-  default_os: [
-    { q: "Which CPU scheduling algorithm can lead to starvation?", options: ["Round Robin", "FCFS", "Shortest Job First (SJF)", "Multilevel Feedback Queue"], correct: 2 },
-    { q: "Deadlock requires all four Coffman conditions. Which is NOT one of them?", options: ["Mutual Exclusion", "Hold and Wait", "Preemption", "Circular Wait"], correct: 2 },
-    { q: "Paging eliminates which memory problem?", options: ["Internal Fragmentation", "External Fragmentation", "Stack Overflow", "Cache Miss"], correct: 1 },
-    { q: "A context switch saves:", options: ["Only CPU registers", "The process control block (PCB) including registers, PC, and stack pointer", "Only the stack", "The file descriptors"], correct: 1 },
-    { q: "LRU (Least Recently Used) is a:", options: ["CPU scheduling algorithm", "Page replacement algorithm", "Disk scheduling algorithm", "Memory allocation strategy"], correct: 1 },
-    { q: "A system call transfers execution from:", options: ["User space to kernel space", "Kernel space to user space", "One process to another", "RAM to CPU cache"], correct: 0 },
-  ],
-  default_cn: [
-    { q: "Which layer of the OSI model handles routing?", options: ["Data Link Layer", "Transport Layer", "Network Layer", "Session Layer"], correct: 2 },
-    { q: "TCP provides which guarantees that UDP does NOT?", options: ["Speed", "Low latency", "Reliable, ordered delivery", "Broadcast support"], correct: 2 },
-    { q: "DNS resolves:", options: ["IP addresses to MAC addresses", "Domain names to IP addresses", "URLs to HTML files", "Ports to services"], correct: 1 },
-    { q: "What does HTTPS add over HTTP?", options: ["Faster speed", "Better caching", "TLS encryption", "WebSocket support"], correct: 2 },
-    { q: "Subnetting divides a network to:", options: ["Improve DNS resolution", "Reduce broadcast domains and improve routing efficiency", "Increase IP address length", "Enable multicast"], correct: 1 },
-    { q: "The 3-way handshake in TCP is: SYN → ?", options: ["SYN → ACK → FIN", "SYN → SYN-ACK → ACK", "SYN → RST → ACK", "SYN → DATA → ACK"], correct: 1 },
-  ],
-  default_oop: [
-    { q: "Encapsulation in OOP means:", options: ["A class can inherit from multiple parents", "Binding data and methods together, hiding internal state", "Overriding parent class methods", "Instantiating abstract classes"], correct: 1 },
-    { q: "Which SOLID principle states a class should have only one reason to change?", options: ["Open/Closed Principle", "Single Responsibility Principle", "Liskov Substitution", "Interface Segregation"], correct: 1 },
-    { q: "Polymorphism allows:", options: ["Objects of different classes to be treated through a common interface", "A class to have private constructors only", "Multiple inheritance only", "Static methods to be overridden"], correct: 0 },
-    { q: "A Singleton design pattern ensures:", options: ["Multiple instances of a class", "Exactly one instance of a class with global access", "Classes cannot be instantiated", "All methods are static"], correct: 1 },
-    { q: "Abstract classes differ from interfaces in Java because:", options: ["Interfaces can have state; abstract classes cannot", "Abstract classes can have constructor and concrete methods; interfaces (pre-Java 8) cannot", "Abstract classes support multiple inheritance", "Interfaces are slower at runtime"], correct: 1 },
-    { q: "Method overloading (compile-time polymorphism) is determined by:", options: ["Return type alone", "Method name and parameter list", "Access modifiers", "Inheritance hierarchy"], correct: 1 },
-  ],
-  default_setup: [
-    { q: "Git command to initialize a new repository:", options: ["git start", "git init", "git create", "git begin"], correct: 1 },
-    { q: "Which command stages all changed files for commit?", options: ["git commit -a", "git push", "git add .", "git stage --all"], correct: 2 },
-    { q: "A .gitignore file is used to:", options: ["Ignore broken commits", "Specify files Git should not track", "Encrypt repository contents", "Set branch permissions"], correct: 1 },
-    { q: "Git rebase vs merge: rebase is preferred when:", options: ["You want to preserve the full branch history", "You want a linear, cleaner commit history", "Working on the main/master branch directly", "Merging hotfixes into production"], correct: 1 },
-    { q: "Which VS Code shortcut opens the integrated terminal?", options: ["Ctrl + T", "Ctrl + `", "Ctrl + Shift + P", "Alt + T"], correct: 1 },
-    { q: "pip install is used for:", options: ["JavaScript packages", "Python packages", "Java dependencies", "Linux packages"], correct: 1 },
-  ],
-  default_system_design: [
-    { q: "A CDN (Content Delivery Network) primarily improves:", options: ["Database write speed", "Static asset delivery latency globally", "Authentication security", "Server-side rendering speed"], correct: 1 },
-    { q: "Horizontal scaling means:", options: ["Upgrading a single server's CPU/RAM", "Adding more servers to distribute load", "Using faster storage", "Optimizing SQL queries"], correct: 1 },
-    { q: "A Load Balancer distributes traffic to:", options: ["A single powerful server", "Multiple backend servers to prevent overload", "The database directly", "Client browsers"], correct: 1 },
-    { q: "CAP Theorem states a distributed system cannot guarantee all three of:", options: ["Consistency, Availability, Partition Tolerance", "Capacity, Atomicity, Performance", "Caching, API, Proxy", "Commit, Acknowledge, Persist"], correct: 0 },
-    { q: "URL shorteners like bit.ly primarily use which data structure for redirects?", options: ["Binary Search Tree", "Hash Map (key: short code → value: long URL)", "Linked List", "Trie"], correct: 1 },
-    { q: "Rate limiting is implemented to:", options: ["Cache static files", "Prevent API abuse by restricting requests per time window", "Compress HTTP responses", "Load balance traffic"], correct: 1 },
-  ],
-  default_project: [
-    { q: "REST API uses which HTTP method to CREATE a resource?", options: ["GET", "DELETE", "PUT", "POST"], correct: 3 },
-    { q: "JWT (JSON Web Token) consists of:", options: ["Only a payload", "Header, Payload, and Signature (Base64 encoded)", "A session ID and cookie", "An encrypted username/password"], correct: 1 },
-    { q: "Which HTTP status code means 'Unauthorized'?", options: ["403", "404", "401", "500"], correct: 2 },
-    { q: "CORS stands for:", options: ["Cross-Origin Resource Sharing", "Client-Only Request System", "Cached Object Response Storage", "Custom Origin Routing Service"], correct: 0 },
-    { q: "Git branching strategy: 'feature branches' are merged into:", options: ["main/master via pull requests after review", "Directly into production", "The database", "CDN"], correct: 0 },
-    { q: "Which deployment platform is 100% free for hobby projects?", options: ["AWS EC2 (paid)", "Vercel (free tier)", "Azure (paid)", "Digital Ocean (paid)"], correct: 1 },
-  ],
-  default_generic: [
-    { q: "Big-O notation O(1) means:", options: ["Linear time", "Constant time — independent of input size", "Quadratic time", "Logarithmic time"], correct: 1 },
-    { q: "A recursive function MUST have a:", options: ["Loop inside it", "Base case to stop recursion", "Global variable", "Return type of void"], correct: 1 },
-    { q: "Which data structure is used in BFS traversal?", options: ["Stack", "Priority Queue", "Queue", "Deque"], correct: 2 },
-    { q: "Time complexity of searching in a Hash Table (average case):", options: ["O(n)", "O(log n)", "O(1)", "O(n log n)"], correct: 2 },
-    { q: "Space complexity measures:", options: ["Execution time", "Memory used relative to input size", "Number of function calls", "Lines of code"], correct: 1 },
-    { q: "Which of these is an example of a greedy algorithm?", options: ["Merge Sort", "Dijkstra's Shortest Path", "Bubble Sort", "Binary Search"], correct: 1 },
-  ],
-};
-
-function pickQuizQuestions(task: Task): QuizQuestion[] {
-  const t = task.title.toLowerCase();
-  if (t.includes("array") || t.includes("two pointer") || t.includes("sliding")) return QUESTION_BANK.default_arrays;
-  if (t.includes("string") || t.includes("palindrome") || t.includes("anagram")) return QUESTION_BANK.default_strings;
-  if (t.includes("graph") || t.includes("bfs") || t.includes("dfs") || t.includes("dijkstra") || t.includes("topological")) return QUESTION_BANK.default_graphs;
-  if (t.includes("dp") || t.includes("dynamic") || t.includes("knapsack") || t.includes("fibonacci") || t.includes("lcs")) return QUESTION_BANK.default_dp;
-  if (t.includes("sql") || t.includes("dbms") || t.includes("database") || t.includes("normalization") || t.includes("acid") || t.includes("join") || t.includes("er diagram")) return QUESTION_BANK.default_dbms;
-  if (t.includes("process") || t.includes("thread") || t.includes("scheduling") || t.includes("deadlock") || t.includes("paging") || t.includes("os") || t.includes("memory management") || t.includes("virtual memory") || t.includes("system call")) return QUESTION_BANK.default_os;
-  if (t.includes("tcp") || t.includes("udp") || t.includes("osi") || t.includes("dns") || t.includes("ip ") || t.includes("network") || t.includes("socket") || t.includes("http")) return QUESTION_BANK.default_cn;
-  if (t.includes("class") || t.includes("oop") || t.includes("encapsulat") || t.includes("inherit") || t.includes("polymorphism") || t.includes("solid") || t.includes("design pattern") || t.includes("singleton")) return QUESTION_BANK.default_oop;
-  if (t.includes("set up") || t.includes("github") || t.includes("git") || t.includes("environment") || t.includes("ide") || t.includes("warm-up")) return QUESTION_BANK.default_setup;
-  if (t.includes("system design") || t.includes("url shortener") || t.includes("rate limiter") || t.includes("load balancer") || t.includes("cdn")) return QUESTION_BANK.default_system_design;
-  if (t.includes("build") || t.includes("project") || t.includes("deploy") || t.includes("portfolio") || t.includes("open-source")) return QUESTION_BANK.default_project;
-  return QUESTION_BANK.default_generic;
-}
+import { 
+  getNextVerificationQuestion, 
+  getQuizQuestionsForTask, 
+  QuestionItem 
+} from "./questionsData";
 
 // ─────────────────────────────────────────────
 // Dynamic Platform Matcher based on URL
@@ -512,7 +206,7 @@ export default function RoadmapPage() {
 
   // ── Quiz State ──
   const [quizActive, setQuizActive] = useState(false);
-  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuestionItem[]>([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
@@ -520,6 +214,7 @@ export default function RoadmapPage() {
   const [quizDone, setQuizDone] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [quizUsedQuestions, setQuizUsedQuestions] = useState<string[]>([]);
 
   // ── Realistic Verification & Proof Modal State ──
   const [visitedLinks, setVisitedLinks] = useState<Record<string, boolean>>({});
@@ -528,6 +223,8 @@ export default function RoadmapPage() {
   const [proofError, setProofError] = useState<string | null>(null);
   const [solvedCounts, setSolvedCounts] = useState<Record<string, number>>({});
   const [solvingProblem, setSolvingProblem] = useState(false);
+  const [verificationUsedQuestions, setVerificationUsedQuestions] = useState<string[]>([]);
+  const [activeVerificationQ, setActiveVerificationQ] = useState<QuestionItem | null>(null);
   const [checkpointSelectedOpt, setCheckpointSelectedOpt] = useState<number | null>(null);
   const [checkpointFeedback, setCheckpointFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
   const REQUIRED_SOLVED = 5;
@@ -584,10 +281,10 @@ export default function RoadmapPage() {
     taskId: string,
     taskType: string,
     selectedOpt: number | null,
-    activeQuestion?: CheckpointQuestion
+    activeQuestion?: QuestionItem | null
   ) => {
+    if (solvingProblem) return;
     setProofError(null);
-    setCheckpointFeedback(null);
 
     if (activeQuestion) {
       if (selectedOpt === null) {
@@ -595,14 +292,29 @@ export default function RoadmapPage() {
         return;
       }
       if (selectedOpt !== activeQuestion.correct) {
+        // ❌ Wrong answer: Show clear explanation, and immediately swap to a fresh question for this topic that has not been seen yet
         setCheckpointFeedback({
           isCorrect: false,
-          message: `❌ Incorrect answer. ${activeQuestion.explanation} Please review the GeeksforGeeks guide above and try again!`
+          message: `❌ Incorrect answer. ${activeQuestion.explanation} Swapping to a fresh question to verify your understanding...`
         });
+
+        setTimeout(() => {
+          const freshQ = getNextVerificationQuestion(
+            todayTaskRef.current?.title || "",
+            todayTaskRef.current?.type,
+            verificationUsedQuestions
+          );
+          setActiveVerificationQ(freshQ);
+          setVerificationUsedQuestions((prev) => prev.includes(freshQ.q) ? prev : [...prev, freshQ.q]);
+          setCheckpointSelectedOpt(null);
+          setCheckpointFeedback(null);
+          setProofError(null);
+        }, 1600);
         return;
       }
     }
 
+    // ✅ Correct answer:
     const noteText = activeQuestion
       ? `Verified Checkpoint Q: "${activeQuestion.q}" -> Answer: ${activeQuestion.options[selectedOpt!]}`
       : proofInput.trim() || "Checkpoint completed";
@@ -620,18 +332,41 @@ export default function RoadmapPage() {
       });
       const data = await res.json();
       if (data.success) {
-        setCheckpointFeedback({
-          isCorrect: true,
-          message: `🎉 Correct answer! Checkpoint verified successfully.`
-        });
-        setTimeout(() => {
-          setSolvedCounts(prev => ({ ...prev, [taskId]: data.solvedCount }));
-          setShowProofModal(false);
-          setProofInput("");
-          setCheckpointSelectedOpt(null);
-          setCheckpointFeedback(null);
-          fetchRoadmapData();
-        }, 900);
+        const newCount = data.solvedCount ?? ((solvedCounts[taskId] || 0) + 1);
+        setSolvedCounts(prev => ({ ...prev, [taskId]: newCount }));
+
+        if (newCount < REQUIRED_SOLVED) {
+          // Advance to the next question inside the modal WITHOUT closing
+          setCheckpointFeedback({
+            isCorrect: true,
+            message: `🎉 Correct answer! Question #${newCount} verified. Loading question #${newCount + 1}...`
+          });
+          setTimeout(() => {
+            const freshQ = getNextVerificationQuestion(
+              todayTaskRef.current?.title || "",
+              todayTaskRef.current?.type,
+              verificationUsedQuestions
+            );
+            setActiveVerificationQ(freshQ);
+            setVerificationUsedQuestions((prev) => prev.includes(freshQ.q) ? prev : [...prev, freshQ.q]);
+            setCheckpointSelectedOpt(null);
+            setCheckpointFeedback(null);
+            fetchRoadmapData();
+          }, 800);
+        } else {
+          // All 5 completed!
+          setCheckpointFeedback({
+            isCorrect: true,
+            message: `🎉 Awesome! All ${REQUIRED_SOLVED} Checkpoint Questions Verified! Quiz is now unlocked below!`
+          });
+          setTimeout(() => {
+            setShowProofModal(false);
+            setProofInput("");
+            setCheckpointSelectedOpt(null);
+            setCheckpointFeedback(null);
+            fetchRoadmapData();
+          }, 1200);
+        }
       } else {
         setProofError(data.error || "Failed to verify completion");
       }
@@ -644,9 +379,17 @@ export default function RoadmapPage() {
 
   // ── Start a fresh quiz for the current task ──
   const startQuiz = (task: Task) => {
-    const qs = pickQuizQuestions(task);
-    const shuffled = [...qs].sort(() => Math.random() - 0.5).slice(0, 5);
-    setQuizQuestions(shuffled);
+    // Strictly exclude all questions from Work Verification (studying proof) and past quiz attempts!
+    const excludedQuestions = Array.from(
+      new Set([
+        ...verificationUsedQuestions,
+        ...quizUsedQuestions,
+        ...(activeVerificationQ ? [activeVerificationQ.q] : [])
+      ])
+    );
+    const qs = getQuizQuestionsForTask(task.title, task.type, excludedQuestions);
+    setQuizUsedQuestions((prev) => Array.from(new Set([...prev, ...qs.map((q) => q.q)])));
+    setQuizQuestions(qs);
     setCurrentQ(0);
     setSelectedOption(null);
     setRevealed(false);
@@ -1085,6 +828,12 @@ export default function RoadmapPage() {
                                   alert("Please click and open the resource link above first before submitting proof of completion!");
                                   return;
                                 }
+                                const nextQ = getNextVerificationQuestion(todayTask.title, todayTask.type, verificationUsedQuestions);
+                                setActiveVerificationQ(nextQ);
+                                setVerificationUsedQuestions((prev) => prev.includes(nextQ.q) ? prev : [...prev, nextQ.q]);
+                                setCheckpointSelectedOpt(null);
+                                setCheckpointFeedback(null);
+                                setProofError(null);
                                 setShowProofModal(true);
                               }}
                               disabled={solvingProblem}
@@ -1170,7 +919,7 @@ export default function RoadmapPage() {
                         className="w-full py-2 bg-white/5 border border-white/10 text-white font-semibold rounded-lg flex items-center justify-center gap-2 hover:bg-white/10 transition-all text-xs"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
-                        Retry Quiz
+                        Retry Quiz (Fresh Questions)
                       </button>
                     )}
                   </div>
@@ -1297,8 +1046,7 @@ export default function RoadmapPage() {
       <AnimatePresence>
         {showProofModal && todayTask && (() => {
           const currentSolvedIdx = solvedCounts[todayTask.id] ?? todayTask._count?.solvedProblems ?? 0;
-          const checkpointQs = getCheckpointQuestionsForTask(todayTask);
-          const activeQ = checkpointQs[currentSolvedIdx % checkpointQs.length];
+          const activeQ = activeVerificationQ || getNextVerificationQuestion(todayTask.title, todayTask.type, verificationUsedQuestions);
           const accurateUrl = getAccurateResourceUrl(todayTask.title, todayTask.description);
 
           return (
@@ -1326,12 +1074,33 @@ export default function RoadmapPage() {
                   <div className="w-10 h-10 rounded-xl bg-brand-cyan/10 border border-brand-cyan/20 flex items-center justify-center text-brand-cyan shrink-0">
                     <FileCheck className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-white leading-tight">Topic Checkpoint Evaluation</h3>
-                    <p className="text-xs text-brand-cyan font-semibold">
-                      Checkpoint Question #{currentSolvedIdx + 1} of 5 · {todayTask.title}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-base font-bold text-white leading-tight">Realistic Work Verification</h3>
+                      <span className="text-xs font-bold text-brand-cyan bg-brand-cyan/10 border border-brand-cyan/20 px-2 py-0.5 rounded-full shrink-0">
+                        {currentSolvedIdx}/5 Verified
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-400 font-medium truncate">
+                      {todayTask.title}
                     </p>
                   </div>
+                </div>
+
+                {/* Progress dots inside the modal */}
+                <div className="flex gap-1.5 pt-1">
+                  {Array.from({ length: REQUIRED_SOLVED }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`flex-1 h-1.5 rounded-full transition-all duration-300 ${
+                        i < currentSolvedIdx 
+                          ? "bg-brand-green" 
+                          : i === currentSolvedIdx 
+                          ? "bg-brand-cyan shadow-glow-cyan" 
+                          : "bg-white/10"
+                      }`}
+                    />
+                  ))}
                 </div>
 
                 {/* Accurate GeeksforGeeks / Tutorial link */}
@@ -1344,55 +1113,77 @@ export default function RoadmapPage() {
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <BookOpen className="w-3.5 h-3.5 shrink-0" />
-                    Open exact article on GeeksforGeeks
+                    Open reference study material
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                 </a>
 
-                {/* Question */}
-                <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3">
-                  <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider block">
-                    Evaluation Question #{currentSolvedIdx + 1}
-                  </span>
-                  <p className="text-xs font-semibold text-white leading-relaxed">
-                    {activeQ.q}
-                  </p>
+                {/* Question box with smooth key transition */}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeQ.q}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider block">
+                        Verification Question #{Math.min(5, currentSolvedIdx + 1)} of 5
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        Topic: {todayTask.title.split("—")[0].trim()}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-white leading-relaxed">
+                      {activeQ.q}
+                    </p>
 
-                  <div className="space-y-2 pt-1">
-                    {activeQ.options.map((opt, i) => {
-                      const isSelected = checkpointSelectedOpt === i;
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => setCheckpointSelectedOpt(i)}
-                          className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2.5 border ${
-                            isSelected
-                              ? "border-brand-cyan bg-brand-cyan/15 text-white font-semibold shadow-glow-cyan"
-                              : "border-white/10 bg-white/[0.02] text-gray-300 hover:bg-white/5 hover:border-white/20"
-                          }`}
-                        >
-                          <span className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-[10px] font-bold ${
-                            isSelected ? "border-brand-cyan bg-brand-cyan text-dark-bg" : "border-white/20 text-gray-400"
-                          }`}>
-                            {String.fromCharCode(65 + i)}
-                          </span>
-                          <span className="flex-1">{opt}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                    <div className="space-y-2 pt-1">
+                      {activeQ.options.map((opt, i) => {
+                        const isSelected = checkpointSelectedOpt === i;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              if (checkpointFeedback) return;
+                              setCheckpointSelectedOpt(i);
+                            }}
+                            disabled={solvingProblem || Boolean(checkpointFeedback)}
+                            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs transition-all flex items-center gap-2.5 border ${
+                              isSelected
+                                ? "border-brand-cyan bg-brand-cyan/15 text-white font-semibold shadow-glow-cyan"
+                                : "border-white/10 bg-white/[0.02] text-gray-300 hover:bg-white/5 hover:border-white/20"
+                            } ${checkpointFeedback ? "opacity-75 cursor-not-allowed" : "cursor-pointer"}`}
+                          >
+                            <span className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 text-[10px] font-bold ${
+                              isSelected ? "border-brand-cyan bg-brand-cyan text-dark-bg" : "border-white/20 text-gray-400"
+                            }`}>
+                              {String.fromCharCode(65 + i)}
+                            </span>
+                            <span className="flex-1">{opt}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
 
                 {/* Instant Evaluation Feedback Alert */}
                 {checkpointFeedback && (
-                  <div className={`p-3 rounded-xl border text-xs font-semibold leading-relaxed flex items-start gap-2 ${
-                    checkpointFeedback.isCorrect
-                      ? "border-brand-green/30 bg-brand-green/10 text-brand-green"
-                      : "border-brand-red/30 bg-brand-red/10 text-brand-red"
-                  }`}>
+                  <motion.div
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3 rounded-xl border text-xs font-semibold leading-relaxed flex items-start gap-2 ${
+                      checkpointFeedback.isCorrect
+                        ? "border-brand-green/30 bg-brand-green/10 text-brand-green"
+                        : "border-brand-red/30 bg-brand-red/10 text-brand-red"
+                    }`}
+                  >
                     {checkpointFeedback.isCorrect ? <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" /> : <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />}
                     <span>{checkpointFeedback.message}</span>
-                  </div>
+                  </motion.div>
                 )}
 
                 {proofError && !checkpointFeedback && (
@@ -1417,7 +1208,7 @@ export default function RoadmapPage() {
                   </button>
                   <button
                     onClick={() => submitProofAndSolve(todayTask.id, todayTask.type, checkpointSelectedOpt, activeQ)}
-                    disabled={solvingProblem || checkpointSelectedOpt === null}
+                    disabled={solvingProblem || checkpointSelectedOpt === null || Boolean(checkpointFeedback)}
                     className="flex-1 py-2.5 bg-brand-cyan text-dark-bg rounded-xl text-xs font-bold hover:bg-brand-cyan/90 transition-all shadow-glow-cyan flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                   >
                     {solvingProblem ? (
