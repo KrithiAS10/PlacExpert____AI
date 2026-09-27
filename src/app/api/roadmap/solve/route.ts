@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { getLearningStreak } from '@/lib/learning-streak';
 
 const REQUIRED_SOLVED_COUNT = 5;
 
@@ -69,6 +70,13 @@ export async function POST(req: Request) {
         notes: notes || null
       }
     });
+
+    const learningActivity = await prisma.solvedProblem.findMany({
+      where: { userId: user.id },
+      select: { solvedAt: true }
+    });
+    const { streak } = getLearningStreak(learningActivity.map((activity) => activity.solvedAt));
+    await prisma.user.update({ where: { id: user.id }, data: { streak } });
 
     const newCount = currentCount + 1;
     const quizUnlocked = newCount >= REQUIRED_SOLVED_COUNT;

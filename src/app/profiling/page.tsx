@@ -26,6 +26,9 @@ interface PredictionResult {
   readiness: string;
   readiness_confidence: Record<string, number>;
   domain_mapping: Record<string, number>;
+  predictedRole?: string;
+  predictedDomain?: string;
+  roadmap?: any;
 }
 
 const steps = [
@@ -312,7 +315,7 @@ export default function ProfilingPage() {
       .slice(0, 6) as [string, number][];
 
     const confidence = Math.round((predictionResult.readiness_confidence?.[predictionResult.readiness] || 0) * 100);
-    const topDomain  = topDomains[0]?.[0] ?? answers.domain ?? "Full Stack";
+    const topDomain  = predictionResult.predictedDomain || (answers.domain && answers.domain !== "Not Decided" ? answers.domain : topDomains[0]?.[0]) || "Full Stack";
 
     const readinessColors: Record<string, string> = {
       "Just Starting":         "text-brand-red",
@@ -561,16 +564,7 @@ export default function ProfilingPage() {
         </button>
       </div>
 
-      {/* Info Card */}
-      <div className="mt-12 p-6 rounded-2xl bg-brand-cyan/5 border border-brand-cyan/10 flex items-start gap-4">
-        <Sparkles className="w-6 h-6 text-brand-cyan shrink-0 mt-1" />
-        <div className="space-y-1">
-          <p className="text-sm font-bold text-white">Why this matters?</p>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Your answers help our AI engine tailor your roadmap, select the right mock interview intensity, and recommend resources that match your current technical depth.
-          </p>
-        </div>
-      </div>
+
     </div>
   );
 }

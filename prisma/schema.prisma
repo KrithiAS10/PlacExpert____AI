@@ -51,6 +51,113 @@ model User {
   analytics          Analytics[]
   activities         Activity[]
   solvedProblems     SolvedProblem[]
+  resumes            Resume[]
+  interviews         Interview[]
+}
+
+model Resume {
+  id                 String          @id @default(uuid())
+  userId             String?
+  user               User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName           String
+  fileUrl            String?
+  rawText            String
+  parsedData         String          // JSON string: name, skills, education, projects, experience, internships, certifications, achievements
+  analysis           String?         // JSON string: strengths, technicalAreas, projects, experienceLevel, potentialTopics, testableSkills, weakAreas
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  interviews         Interview[]
+
+  @@index([userId])
+}
+
+model Interview {
+  id                 String              @id @default(uuid())
+  userId             String?
+  user               User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resumeId           String?
+  resume             Resume?             @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+  role               String?
+  type               String              @default("Technical") // Technical, HR, Behavioral, Mixed
+  difficulty         String              @default("Medium")    // Easy, Medium, Hard
+  mode               String              @default("Text")      // Text, Voice
+  totalQuestions     Int                 @default(5)
+  currentQuestionIndex Int               @default(0)
+  status             String              @default("CREATED")   // CREATED, IN_PROGRESS, COMPLETED, CANCELLED
+  topicsCovered      String?             // JSON string array of topics
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  questions          InterviewQuestion[]
+  answers            InterviewAnswer[]
+  report             InterviewReport?
+
+  @@index([userId])
+  @@index([resumeId])
+}
+
+model InterviewQuestion {
+  id                 String              @id @default(uuid())
+  interviewId        String
+  interview          Interview           @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  orderIndex         Int
+  questionText       String
+  category           String              @default("Technical") // Technical, Project, HR, Behavioral, Resume-Based
+  topic              String?
+  difficulty         String              @default("Medium")
+  intent             String?
+  isFollowUp         Boolean             @default(false)
+  reason             String?
+  createdAt          DateTime            @default(now())
+
+  answers            InterviewAnswer[]
+
+  @@index([interviewId])
+}
+
+model InterviewAnswer {
+  id                   String            @id @default(uuid())
+  interviewId          String
+  interview            Interview         @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  questionId           String
+  question             InterviewQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answerText           String
+  score                Float             @default(0)
+  technicalCorrectness Float             @default(0)
+  relevance            Float             @default(0)
+  clarity              Float             @default(0)
+  completeness         Float             @default(0)
+  confidence           Float             @default(0)
+  feedback             String?
+  strengths            String?           // JSON string array
+  weaknesses           String?           // JSON string array
+  knowledgeGaps        String?           // JSON string array
+  durationSeconds      Int               @default(0)
+  createdAt            DateTime          @default(now())
+
+  @@index([interviewId])
+  @@index([questionId])
+}
+
+model InterviewReport {
+  id                     String          @id @default(uuid())
+  interviewId            String          @unique
+  interview              Interview       @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  overallScore           Float           @default(0)
+  technicalScore         Float           @default(0)
+  communicationScore     Float           @default(0)
+  problemSolvingScore    Float           @default(0)
+  resumeKnowledgeScore   Float           @default(0)
+  confidenceScore        Float           @default(0)
+  summary                String?
+  strengths              String?         // JSON string array
+  weaknesses             String?         // JSON string array
+  knowledgeGaps          String?         // JSON string array
+  resumePerformance      String?         // JSON string array
+  improvementSuggestions String?         // JSON string array
+  preparationTopics      String?         // JSON string array
+  createdAt              DateTime        @default(now())
 }
 
 model SurveyResult {

@@ -79,6 +79,30 @@ def predict(input_data):
     if total > 0:
         domain_results = {k: v/total for k, v in domain_results.items()}
 
+    # Prioritize user's explicit domain interest if specified
+    user_domain = mapped_data.get('Domain_Interest') or mapped_data.get('domain')
+    if user_domain and str(user_domain).strip() and str(user_domain).strip() != "Not Decided":
+        clean_user_domain = str(user_domain).strip()
+        matched_key = None
+        for k in domain_results.keys():
+            if k.lower() == clean_user_domain.lower() or (k.lower() in clean_user_domain.lower()) or (clean_user_domain.lower() in k.lower()):
+                matched_key = k
+                break
+        
+        if not matched_key:
+            matched_key = clean_user_domain
+            domain_results[matched_key] = 0.0
+
+        other_total = sum(v for k, v in domain_results.items() if k != matched_key)
+        new_results = {}
+        for k, v in domain_results.items():
+            if k == matched_key:
+                new_results[k] = 0.85
+            else:
+                new_results[k] = float((v / other_total * 0.15) if other_total > 0 else (0.15 / max(1, len(domain_results) - 1)))
+        
+        domain_results = dict(sorted(new_results.items(), key=lambda item: item[1], reverse=True))
+
     return {
         'readiness': readiness,
         'readiness_confidence': readiness_probs,

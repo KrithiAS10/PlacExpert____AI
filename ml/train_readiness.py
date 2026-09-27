@@ -38,7 +38,7 @@ MODEL_DIR = os.path.join(BASE_DIR, "models")
 os.makedirs(MODEL_DIR, exist_ok=True)
 
 print("=" * 60)
-print("PlaceXpert-AI — Readiness Model Training Pipeline")
+print("PlacExpert-AI — Readiness Model Training Pipeline")
 print("=" * 60)
 
 df = pd.read_csv(DATASET_PATH)

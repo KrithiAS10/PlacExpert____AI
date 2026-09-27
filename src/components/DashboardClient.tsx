@@ -12,7 +12,8 @@ import {
   Award,
   BookOpen,
   MessageSquare,
-  PlayCircle
+  PlayCircle,
+  Mic
 } from "lucide-react";
 import Link from "next/link";
 import { ReadinessChart } from "@/app/roadmap/components/ReadinessChart";
@@ -232,9 +233,9 @@ export function DashboardClient({ user, recommendations }: DashboardClientProps)
               </button>
             </>
           )}
-          <Link href="/mock-interview" className="px-5 py-2.5 bg-dark-card border border-dark-border text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-dark-hover transition-all">
-            <MessageSquare className="w-4 h-4" />
-            Quick Interview
+          <Link href="/ai-interview" className="px-5 py-2.5 bg-dark-card border border-dark-border text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-dark-hover transition-all">
+            <Mic className="w-4 h-4 text-brand-cyan" />
+            AI Mock Interview
           </Link>
         </div>
       </div>

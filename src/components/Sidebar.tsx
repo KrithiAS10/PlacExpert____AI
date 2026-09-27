@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  Map, 
-  MessageSquare, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Map,
+  MessageSquare,
+  BarChart3,
   Zap,
   Target,
   Mic
@@ -40,13 +40,14 @@ export function Sidebar({ user }: SidebarProps) {
   const navItems = [
     { name: "Overview", href: "/", icon: LayoutDashboard },
     { name: "Profiling", href: "/profiling", icon: Target, badge: "New" },
-    { 
-      name: "My Roadmap", 
-      href: "/roadmap", 
-      icon: Map, 
-      badge: user?.currentDay ? `Day ${user.currentDay}` : "Day 1" 
+    {
+      name: "My Roadmap",
+      href: "/roadmap",
+      icon: Map,
+      badge: user?.currentDay ? `Day ${user.currentDay}` : "Day 1"
     },
-    { name: "Voice Mock Interview", href: "/mock-interview", icon: Mic, badge: "AI Voice" },
+    { name: "AI Mock Interview", href: "/ai-interview", icon: Mic, badge: "AI" },
+    { name: "Domain Practice", href: "/mock-interview", icon: MessageSquare },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
   ];
 
@@ -57,7 +58,7 @@ export function Sidebar({ user }: SidebarProps) {
           <Zap className="w-5 h-5 text-white fill-white" />
         </div>
         <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-          PlaceXpert-AI
+          PlacExpert-AI
         </span>
       </div>
 
@@ -73,8 +74,8 @@ export function Sidebar({ user }: SidebarProps) {
               href={item.href}
               className={cn(
                 "flex items-center justify-between px-3 py-2 rounded-lg transition-all duration-200 group",
-                isActive 
-                  ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20" 
+                isActive
+                  ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20"
                   : "text-gray-400 hover:bg-dark-hover hover:text-white"
               )}
             >

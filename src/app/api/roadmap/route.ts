@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { getLearningStreak } from '@/lib/learning-streak';
 
 export async function GET() {
   try {
@@ -43,22 +44,61 @@ export async function GET() {
       where: { userId: user.id }
     });
 
-    // Calculate currentDay dynamically based on calendar days elapsed since user created roadmap
+    // Keep roadmap progress tied to calendar days, not the next uncompleted task.
+    // This means a two-day roadmap remains on Day 1 on its first day and changes
+    // to Day 2 when the learner returns on the following calendar day.
     let currentDay = user.currentDay || 1;
+    let dayAdvanced = false;
+    let newStreak = user.streak || 0;
+    let learnedToday = false;
+    let totalDays = 0;
+
     if (activeRoadmap) {
+      const roadmapTasks = activeRoadmap.phases.flatMap((phase) => phase.tasks);
+      totalDays = roadmapTasks.length
+        ? Math.max(...roadmapTasks.map((task) => task.day))
+        : 1;
       const createdDate = new Date(activeRoadmap.createdAt);
       const today = new Date();
       createdDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
       const calendarDays = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      currentDay = Math.max(1, calendarDays, user.currentDay || 1);
+      // A course completion can move the learner straight to the start of the
+      // next course (for example, Day 5 → Day 7). Calendar time can advance
+      // that value, but must not move it backward.
+      const newDay = Math.min(totalDays, Math.max(1, calendarDays, user.currentDay || 1));
 
-      if (currentDay !== user.currentDay) {
+      if (newDay > user.currentDay) {
+        dayAdvanced = true;
+        currentDay = newDay;
         await prisma.user.update({
           where: { id: user.id },
           data: { currentDay }
         });
+      } else {
+        // Correct progress written by older task-completion logic without showing
+        // a false "day advanced" notification.
+        currentDay = newDay;
+        if (currentDay !== user.currentDay) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { currentDay }
+          });
+        }
       }
+    }
+
+    const learningActivity = await prisma.solvedProblem.findMany({
+      where: { userId: user.id },
+      select: { solvedAt: true }
+    });
+    const learningProgress = getLearningStreak(
+      learningActivity.map((activity) => activity.solvedAt)
+    );
+    newStreak = learningProgress.streak;
+    learnedToday = learningProgress.learnedToday;
+    if (newStreak !== user.streak) {
+      await prisma.user.update({ where: { id: user.id }, data: { streak: newStreak } });
     }
 
     // User has completed profiling ONLY if domainInterest is set
@@ -118,7 +158,7 @@ export async function GET() {
         phone: user.phone,
         readinessScore: user.readinessScore,
         currentDay: currentDay,
-        streak: user.streak,
+        streak: newStreak,
         readinessLevel: user.readinessLevel,
         domainInterest: user.domainInterest,
         targetCompany: user.targetCompany,
@@ -131,9 +171,18 @@ export async function GET() {
         preferredLang: user.preferredLang,
         placementTimeline: user.placementTimeline,
         totalSolvedProblems,
+        totalDays,
       },
       roadmap: activeRoadmap,
-      weakAreas
+      weakAreas,
+      // Notification flags for the client
+      dayAdvanced,
+      streakInfo: !learnedToday && activeRoadmap ? {
+        newDay: currentDay,
+        totalDays,
+        streak: newStreak,
+        message: `Day ${currentDay} of ${totalDays} is ready. Complete today's learning to maintain your streak!`
+      } : null
     });
   } catch (err: any) {
     console.error("Failed to fetch roadmap:", err);

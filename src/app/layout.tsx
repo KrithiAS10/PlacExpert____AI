@@ -3,7 +3,7 @@ import "./globals.css";
 import { LayoutWrapper } from "@/components/LayoutWrapper";
 
 export const metadata: Metadata = {
-  title: "PlaceXpert-AI | AI-Powered Career Guidance",
+  title: "PlacExpert-AI | AI-Powered Career Guidance",
   description: "Advanced adaptive roadmap and mock interview platform for career growth.",
 };
 

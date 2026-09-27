@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
-import { X, Zap, Mail, Lock, User, Phone, Globe, ArrowRight, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { X, Zap, Mail, Lock, User, Phone, Globe, ArrowRight, ShieldCheck, CheckCircle2, Flame, Calendar, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -19,6 +19,16 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [sessionChecked, setSessionChecked] = useState(false);
   const [authMode, setAuthMode] = useState<"register" | "login">("register");
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // ── Streak / Day-Advance Notification ──
+  const [streakNotification, setStreakNotification] = useState<{
+    message: string;
+    newDay: number;
+    totalDays: number;
+    streak: number;
+  } | null>(null);
+  const [notifVisible, setNotifVisible] = useState(false);
+  const notifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Form states
   const [name, setName] = useState("");
@@ -53,6 +63,21 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
             ...data.user,
             weakAreas: data.weakAreas || [],
           });
+
+          // ── Show streak notification if day advanced ──
+          if (data.streakInfo) {
+            const todayKey = `streak-notif-${new Date().toDateString()}`;
+            if (!sessionStorage.getItem(todayKey)) {
+              sessionStorage.setItem(todayKey, "1");
+              setStreakNotification(data.streakInfo);
+              setNotifVisible(true);
+              if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+              notifTimerRef.current = setTimeout(() => {
+                setNotifVisible(false);
+                setTimeout(() => setStreakNotification(null), 400);
+              }, 6000);
+            }
+          }
         } else {
           setUser(null);
         }
@@ -181,6 +206,81 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+
+      {/* ── Global Day-Advance / Streak Notification Toast ── */}
+      <AnimatePresence>
+        {streakNotification && notifVisible && (
+          <motion.div
+            initial={{ opacity: 0, x: 80, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 80, scale: 0.95 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="fixed top-5 right-5 z-[99999] w-80 max-w-[calc(100vw-2rem)]"
+          >
+            <div className="relative overflow-hidden rounded-2xl border border-brand-cyan/30 bg-dark-card/95 backdrop-blur-xl shadow-2xl p-4">
+              {/* Gradient glow bar at top */}
+              <div className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-cyan via-brand-blue to-brand-purple" />
+              {/* Background glow */}
+              <div className="absolute -top-8 -right-8 w-32 h-32 bg-brand-cyan/10 blur-2xl pointer-events-none rounded-full" />
+
+              <div className="flex items-start gap-3 relative">
+                {/* Icon */}
+                <div className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-brand-cyan/20 to-brand-blue/20 border border-brand-cyan/30 flex items-center justify-center">
+                  {streakNotification.streak >= 7
+                    ? <Flame className="w-5 h-5 text-orange-400" />
+                    : streakNotification.streak >= 3
+                    ? <Zap className="w-5 h-5 text-brand-cyan" />
+                    : <Bell className="w-5 h-5 text-brand-cyan" />}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-widest">Day Update</span>
+                    <span className="text-[9px] text-gray-500 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-md font-bold">
+                      Day {streakNotification.newDay} of {streakNotification.totalDays}
+                    </span>
+                  </div>
+                  <p className="text-sm font-semibold text-white leading-tight">{streakNotification.message}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <Flame className="w-3 h-3 text-orange-400" />
+                      <span><strong className="text-white">{streakNotification.streak}</strong> day streak</span>
+                    </div>
+                    <span className="text-white/20">·</span>
+                    <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                      <Calendar className="w-3 h-3 text-brand-cyan" />
+                      <span>Day <strong className="text-white">{streakNotification.newDay}/{streakNotification.totalDays}</strong></span>
+                    </div>
+                  </div>
+
+                  {/* Progress strip for 6s auto-dismiss */}
+                  <div className="mt-2.5 h-0.5 w-full bg-white/10 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-brand-cyan rounded-full"
+                      initial={{ width: "100%" }}
+                      animate={{ width: "0%" }}
+                      transition={{ duration: 6, ease: "linear" }}
+                    />
+                  </div>
+                </div>
+
+                {/* Close button */}
+                <button
+                  onClick={() => {
+                    setNotifVisible(false);
+                    if (notifTimerRef.current) clearTimeout(notifTimerRef.current);
+                    setTimeout(() => setStreakNotification(null), 400);
+                  }}
+                  className="shrink-0 w-6 h-6 flex items-center justify-center rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Sidebar - hidden if auth page or no logged in user */}
       {!isAuthPage && user && (
         <>
@@ -217,7 +317,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
             // Full screen loader while checking session
             <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
               <div className="w-12 h-12 border-4 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin" />
-              <p className="text-gray-400 text-sm font-medium">Loading PlaceXpert-AI...</p>
+              <p className="text-gray-400 text-sm font-medium">Loading PlacExpert-AI...</p>
             </div>
           ) : !isAuthPage && !user ? (
             // Blurry background container to show dashboard layout beneath popup
@@ -252,7 +352,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
                 <div className="w-12 h-12 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-glow-cyan mb-4">
                   <Zap className="w-6 h-6 text-white fill-white" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">PlaceXpert-AI</h2>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">PlacExpert-AI</h2>
                 <p className="text-gray-400 text-sm mt-2 max-w-xs">
                   AI-Powered prep roadmap built to help you land top tech roles.
                 </p>
