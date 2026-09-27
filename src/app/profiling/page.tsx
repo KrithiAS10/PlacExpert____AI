@@ -564,16 +564,7 @@ export default function ProfilingPage() {
         </button>
       </div>
 
-      {/* Info Card */}
-      <div className="mt-12 p-6 rounded-2xl bg-brand-cyan/5 border border-brand-cyan/10 flex items-start gap-4">
-        <Sparkles className="w-6 h-6 text-brand-cyan shrink-0 mt-1" />
-        <div className="space-y-1">
-          <p className="text-sm font-bold text-white">Why this matters?</p>
-          <p className="text-xs text-gray-500 leading-relaxed">
-            Your answers help our AI engine tailor your roadmap, select the right mock interview intensity, and recommend resources that match your current technical depth.
-          </p>
-        </div>
-      </div>
+
     </div>
   );
 }
