@@ -57,7 +57,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                        PlaceXpert AI System                       │
+│                       PlaceXpert AI System                       │
 ├─────────────────┬────────────────────┬───────────────────────────┤
 │   Frontend      │     Backend        │      ML Engine (Python)   │
 │   (Next.js 16)  │  (Express.js +     │                           │

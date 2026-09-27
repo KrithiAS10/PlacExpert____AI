@@ -317,7 +317,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
             // Full screen loader while checking session
             <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
               <div className="w-12 h-12 border-4 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin" />
-              <p className="text-gray-400 text-sm font-medium">Loading PlaceXpert-AI...</p>
+              <p className="text-gray-400 text-sm font-medium">Loading PlacExpert-AI...</p>
             </div>
           ) : !isAuthPage && !user ? (
             // Blurry background container to show dashboard layout beneath popup
@@ -352,7 +352,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
                 <div className="w-12 h-12 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-glow-cyan mb-4">
                   <Zap className="w-6 h-6 text-white fill-white" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">PlaceXpert-AI</h2>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">PlacExpert-AI</h2>
                 <p className="text-gray-400 text-sm mt-2 max-w-xs">
                   AI-Powered prep roadmap built to help you land top tech roles.
                 </p>

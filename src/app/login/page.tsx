@@ -114,7 +114,7 @@ export default function LoginPage() {
             <div className="w-12 h-12 bg-brand-cyan rounded-2xl flex items-center justify-center shadow-glow-cyan group-hover:scale-110 transition-transform">
               <Zap className="w-6 h-6 text-white fill-white" />
             </div>
-            <span className="text-2xl font-bold text-white tracking-tight">PlaceXpert-AI</span>
+            <span className="text-2xl font-bold text-white tracking-tight">PlacExpert-AI</span>
           </Link>
         </div>
 

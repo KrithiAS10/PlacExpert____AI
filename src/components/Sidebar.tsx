@@ -46,7 +46,8 @@ export function Sidebar({ user }: SidebarProps) {
       icon: Map,
       badge: user?.currentDay ? `Day ${user.currentDay}` : "Day 1"
     },
-    { name: "Mock Interview", href: "/mock-interview", icon: Mic },
+    { name: "AI Mock Interview", href: "/ai-interview", icon: Mic, badge: "AI" },
+    { name: "Domain Practice", href: "/mock-interview", icon: MessageSquare },
     { name: "Analytics", href: "/analytics", icon: BarChart3 },
   ];
 
@@ -57,7 +58,7 @@ export function Sidebar({ user }: SidebarProps) {
           <Zap className="w-5 h-5 text-white fill-white" />
         </div>
         <span className="text-xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-          PlaceXpert-AI
+          PlacExpert-AI
         </span>
       </div>
 

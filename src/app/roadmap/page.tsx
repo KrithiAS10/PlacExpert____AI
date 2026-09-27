@@ -41,6 +41,7 @@ interface Task {
   title: string;
   description: string | null; // stores resource_url
   day: number;
+  category?: string | null;
   status: string;
   type: string;
   _count?: { solvedProblems: number };
@@ -573,6 +574,7 @@ export default function RoadmapPage() {
   const [quizDone, setQuizDone] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
 
   // ── Realistic Verification & Proof Modal State ──
   const [visitedLinks, setVisitedLinks] = useState<Record<string, boolean>>({});
@@ -696,7 +698,35 @@ export default function RoadmapPage() {
   };
 
   // ── Start a fresh quiz for the current task ──
-  const startQuiz = (task: Task) => {
+  const startQuiz = async (task: Task) => {
+    setLoadingQuiz(true);
+    try {
+      const res = await fetch("/api/quiz/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskTitle: task.title, category: task.category || "" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questions && data.questions.length >= 5) {
+          setQuizQuestions(data.questions);
+          setCurrentQ(0);
+          setSelectedOption(null);
+          setRevealed(false);
+          setScore(0);
+          setQuizDone(false);
+          setQuizPassed(false);
+          setQuizActive(true);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Dynamic quiz generation fallback:", err);
+    } finally {
+      setLoadingQuiz(false);
+    }
+
+    // Local fallback
     const qs = pickQuizQuestions(task);
     const shuffled = [...qs].sort(() => Math.random() - 0.5).slice(0, 5);
     setQuizQuestions(shuffled);
@@ -1190,17 +1220,28 @@ export default function RoadmapPage() {
 
                       <button
                         onClick={() => startQuiz(todayTask)}
-                        disabled={!quizReady}
+                        disabled={!quizReady || loadingQuiz}
                         className={`w-full py-2.5 font-bold rounded-lg flex items-center justify-center gap-2 transition-all text-xs ${
-                          quizReady
+                          quizReady && !loadingQuiz
                             ? "bg-gradient-to-r from-brand-cyan to-brand-blue text-dark-bg hover:opacity-90 shadow-glow-cyan cursor-pointer"
                             : "bg-white/5 text-gray-600 cursor-not-allowed border border-white/5"
                         }`}
                       >
-                        <Brain className="w-3.5 h-3.5" />
-                        {quizReady
-                          ? "Take Quiz to Complete Task"
-                          : `🔒 Verify ${REQUIRED_SOLVED} Items to Unlock Quiz`}
+                        {loadingQuiz ? (
+                          <>
+                            <div className="w-3.5 h-3.5 border-2 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin" />
+                            <span>Generating Random Topic Quiz...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Brain className="w-3.5 h-3.5" />
+                            <span>
+                              {quizReady
+                                ? "Take Quiz to Complete Task"
+                                : `🔒 Verify ${REQUIRED_SOLVED} Items to Unlock Quiz`}
+                            </span>
+                          </>
+                        )}
                       </button>
                     </>
                   );
