@@ -10,46 +10,49 @@ interface LLMResponse {
  * Universal caller supporting Gemini, OpenAI, Groq, Anthropic, or fallback
  */
 export async function callLLM(systemPrompt: string, userPrompt: string): Promise<LLMResponse> {
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
 
   // 1. Try Google Gemini API if key exists
   if (geminiKey) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`;
-      const payload = {
-        system_instruction: {
-          parts: [{ text: systemPrompt }],
-        },
-        contents: [
-          {
-            parts: [{ text: userPrompt }],
+    const models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    for (const model of models) {
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+        const payload = {
+          system_instruction: {
+            parts: [{ text: systemPrompt }],
           },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-        },
-      };
+          contents: [
+            {
+              parts: [{ text: userPrompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: "application/json",
+          },
+        };
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        try {
-          return { raw: text, json: JSON.parse(text) };
-        } catch {
-          return { raw: text };
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          try {
+            return { raw: text, json: JSON.parse(text) };
+          } catch {
+            return { raw: text };
+          }
         }
+      } catch (err) {
+        console.warn(`Gemini (${model}) call failed:`, err);
       }
-    } catch (err) {
-      console.warn("Gemini API call failed, falling back to other providers or local logic:", err);
     }
   }
 
