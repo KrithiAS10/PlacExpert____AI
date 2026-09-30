@@ -106,160 +106,29 @@ export async function POST(req: Request) {
     }
 
     const predictedRole = mapDomainAndLanguageToRole(predictedDomain, body.preferredLang || "");
+    const resolvedRole = predictedRole;
 
-    // Fetch matching tasks from RoadmapTemplate
-    const blueprintTasks = await prisma.roadmapTemplate.findMany({
-      where: { roleName: predictedRole },
-      orderBy: { dayNumber: "asc" }
-    });
-
-    let resolvedRole = predictedRole;
-    let tasksToUse = blueprintTasks;
-    if (tasksToUse.length === 0) {
-      resolvedRole = "Software Engineer";
-      tasksToUse = await prisma.roadmapTemplate.findMany({
-        where: { roleName: resolvedRole },
-        orderBy: { dayNumber: "asc" }
-      });
-    }
-
-    const timeline = body.placementTimeline || "45 Days";
-    const TIMELINE_MAP: Record<string, number> = {
-      "1 Month": 30,
-      "45 Days": 45,
-      "2 Months": 60,
-      "3 Months": 90,
-      "6 Months": 180,
-    };
-    const total_days = TIMELINE_MAP[timeline] || 45;
-
-    // Scale blueprint course deadlines proportionally. The UI derives each
-    // course's start day from the previous course deadline.
-    const scaledTasks = tasksToUse.map((t) => {
-      const scaledDay = Math.max(1, Math.min(total_days, Math.ceil((t.dayNumber / 45) * total_days)));
-      return {
-        title: t.title,
-        day: scaledDay,
-        category: t.category,
-        resourceName: t.resourceName,
-        resourceLink: t.resourceLink
-      };
-    });
-
-    // Generate Remediation tasks for weak areas
-    const remediationTasks = [];
-    let remDay = total_days - finalWeakAreas.length + 1;
-    if (remDay < 1) remDay = 1;
-
-    const WEAK_TOPICS: Record<string, string[]> = {
-      "DSA": ["Arrays & Hashing", "Linked Lists", "Trees & Graphs"],
-      "DBMS": ["SQL Queries & Joins", "Normalization & Transactions", "Indexing & Optimization"],
-      "OS": ["CPU Scheduling", "Memory Management & Paging", "Deadlocks & Semaphores"],
-      "CN": ["IP Addressing & Subnetting", "TCP/IP Layer Protocols", "DNS & HTTP/HTTPS Handshakes"]
-    };
-
-    for (const area of finalWeakAreas) {
-      if (remDay > total_days) break;
-      const topics = WEAK_TOPICS[area] || ["Core Concepts & Practice"];
-      const topic = topics[0];
-      remediationTasks.push({
-        title: `[REMEDIATION] ${area} — ${topic}`,
-        day: remDay,
-        category: area,
-        resourceName: "GeeksforGeeks",
-        resourceLink: "https://www.geeksforgeeks.org/"
-      });
-      remDay++;
-    }
-
-    // Define 3 phases
-    const p1End = Math.floor(total_days * 0.33);
-    const p2End = Math.floor(total_days * 0.66);
-
-    const phases = [
-      {
-        name: "Phase 1: Fundamentals & Core Concepts",
-        order: 1,
-        days: `1-${p1End}`,
-        day_start: 1,
-        day_end: p1End,
-        focus: "fundamentals",
-        status: "active",
-        color: "cyan"
-      },
-      {
-        name: "Phase 2: Deep Dive & Practice",
-        order: 2,
-        days: `${p1End + 1}-${p2End}`,
-        day_start: p1End + 1,
-        day_end: p2End,
-        focus: "practice",
-        status: "locked",
-        color: "blue"
-      },
-      {
-        name: "Phase 3: Projects & Interview Polish",
-        order: 3,
-        days: `${p2End + 1}-${total_days}`,
-        day_start: p2End + 1,
-        day_end: total_days,
-        focus: "interview",
-        status: "locked",
-        color: "teal"
-      }
-    ];
-
-    const finalTasks = scaledTasks.map((t) => {
-      let phaseName = phases[0].name;
-      if (t.day > p1End && t.day <= p2End) {
-        phaseName = phases[1].name;
-      } else if (t.day > p2End) {
-        phaseName = phases[2].name;
-      }
-
-      let type = "TOPIC";
-      const titleLower = t.title.toLowerCase();
-      if (titleLower.includes("leetcode") || titleLower.includes("solve") || t.category === "DSA" || t.category === "Problem Solving") {
-        type = "PROBLEM";
-      } else if (titleLower.includes("mock") || titleLower.includes("interview")) {
-        type = "MOCK";
-      }
-
-      return {
-        title: t.title,
-        day: t.day,
-        phase: phaseName,
-        status: "PENDING",
-        type: type,
-        resource_url: t.resourceLink || "https://www.geeksforgeeks.org/"
-      };
-    });
-
-    for (const rt of remediationTasks) {
-      let phaseName = phases[2].name;
-      if (rt.day <= p1End) phaseName = phases[0].name;
-      else if (rt.day <= p2End) phaseName = phases[1].name;
-
-      finalTasks.push({
-        title: rt.title,
-        day: rt.day,
-        phase: phaseName,
-        status: "PENDING",
-        type: "TOPIC",
-        resource_url: rt.resourceLink
-      });
-    }
-
-    const roadmapData = {
-      title: `${resolvedRole} Prep Track`,
-      description: `Personalized ${timeline} plan for ${resolvedRole} using ${body.preferredLang || "Python"}`,
-      total_days,
-      readiness: rawReadiness,
+    // Generate roadmap via Python engine (contains all task data internally — no DB seed required)
+    const roadmapParams = {
+      readiness: (() => {
+        if (rawReadiness === "Actively Practicing") return "Intermediate";
+        if (rawReadiness === "Ready for Interviews") return "Advanced";
+        return "Beginner";
+      })(),
       daily_study_time: body.dailyStudyTime || "2-3 hours",
       preferred_language: body.preferredLang || "Python",
-      phases,
-      tasks: finalTasks
+      placement_timeline: body.placementTimeline || "45 Days",
+      weak_areas: finalWeakAreas,
+      domain_interest: predictedDomain,
+      core_cs_strength: body.strength || "None",
+      coding_platform: body.platform || "LeetCode",
+      target_company: body.target || ""
     };
+
+    const roadmapScript = path.join(process.cwd(), 'ml', 'roadmap_engine.py');
+    const roadmapOutput = await runPythonScript(roadmapScript, [JSON.stringify(roadmapParams)]);
+    const roadmapData = JSON.parse(roadmapOutput);
+    const total_days = roadmapData.total_days || 45;
 
     // 5. Update user and save roadmap to database
     const cookieStore = await cookies();
