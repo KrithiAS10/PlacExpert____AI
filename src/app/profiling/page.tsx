@@ -145,9 +145,14 @@ export default function ProfilingPage() {
     fetch("/api/roadmap")
       .then((res) => res.json())
       .then((data) => {
-        if (data?.user?.domainInterest || data?.roadmap) {
+        const hasValidRoadmap = Boolean(
+          data?.roadmap &&
+          Array.isArray(data.roadmap.phases) &&
+          data.roadmap.phases.some((p: any) => p.tasks && p.tasks.length > 0)
+        );
+        if (hasValidRoadmap) {
           setExistingProfile({
-            domain: data.user?.domainInterest || "Placement",
+            domain: data.user?.domainInterest || data.roadmap.role || "Placement",
             day: data.user?.currentDay || 1,
           });
         }
