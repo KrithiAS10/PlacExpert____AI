@@ -96,6 +96,27 @@ async function main() {
     ]
   });
 
+  // Seed RoadmapTemplate if empty
+  const templateCount = await prisma.roadmapTemplate.count();
+  if (templateCount === 0) {
+    const { ROLE_ROADMAPS } = await import('../backend/constants/roadmaps.js');
+    for (const [roleName, tasks] of Object.entries(ROLE_ROADMAPS as Record<string, any[]>)) {
+      for (const task of tasks) {
+        await prisma.roadmapTemplate.create({
+          data: {
+            roleName,
+            dayNumber: task.dayNumber,
+            title: task.title,
+            category: task.category || "General",
+            resourceName: task.resourceName || "Explore Resource",
+            resourceLink: task.resourceLink || "https://roadmap.sh",
+          },
+        });
+      }
+    }
+    console.log('RoadmapTemplate table seeded successfully');
+  }
+
   console.log('Database seeded successfully');
 }
 

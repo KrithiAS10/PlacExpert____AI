@@ -5,7 +5,9 @@ import pandas as pd
 import numpy as np
 
 # Load the model
-with open('ml/advanced_analytics.pkl', 'rb') as f:
+script_dir = os.path.dirname(os.path.abspath(__file__))
+pkl_path = os.path.join(script_dir, 'advanced_analytics.pkl')
+with open(pkl_path, 'rb') as f:
     data = pickle.load(f)
 
 model = data['xgboost_model']

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { getLearningStreak } from '@/lib/learning-streak';
+import { generateAndSaveRoadmap } from '@/lib/roadmap-generator';
 
 export async function GET() {
   try {
@@ -11,7 +12,7 @@ export async function GET() {
     if (!userEmail) {
       return NextResponse.json({ user: null, roadmap: null });
     }
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email: userEmail },
       include: {
         roadmaps: {
@@ -37,7 +38,61 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const activeRoadmap = user.roadmaps[0] || null;
+    let activeRoadmap = user.roadmaps[0] || null;
+    const existingTasksCount = activeRoadmap ? activeRoadmap.phases.flatMap((p) => p.tasks).length : 0;
+
+    // Self-healing: If user completed profiling but active roadmap is missing or empty, generate it immediately
+    if (user.domainInterest && (!activeRoadmap || existingTasksCount === 0)) {
+      try {
+        await generateAndSaveRoadmap(
+          user.id,
+          {
+            academicYear: user.academicYear || undefined,
+            domain: user.domainInterest,
+            target: user.targetCompany || undefined,
+            strength: user.coreCsStrength || undefined,
+            platform: user.codingPlatform || undefined,
+            exposure: user.projects || undefined,
+            aptitude: user.aptitude || undefined,
+            comm: user.communication || undefined,
+            dailyStudyTime: user.dailyStudyTime || undefined,
+            preferredLang: user.preferredLang || undefined,
+            placementTimeline: user.placementTimeline || undefined,
+            readiness: user.readinessLevel || "Actively Practicing"
+          },
+          user.readinessLevel || "Actively Practicing"
+        );
+
+        const refreshedUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          include: {
+            roadmaps: {
+              orderBy: { createdAt: 'desc' },
+              include: {
+                phases: {
+                  orderBy: { order: 'asc' },
+                  include: {
+                    tasks: {
+                      orderBy: { day: 'asc' },
+                      include: {
+                        _count: { select: { solvedProblems: true } }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        if (refreshedUser && refreshedUser.roadmaps[0]) {
+          user = refreshedUser;
+          activeRoadmap = refreshedUser.roadmaps[0];
+        }
+      } catch (genErr) {
+        console.error("Self-healing roadmap generation failed in GET /api/roadmap:", genErr);
+      }
+    }
 
     // Count total solved problems for this user
     const totalSolvedProblems = await prisma.solvedProblem.count({
@@ -45,8 +100,6 @@ export async function GET() {
     });
 
     // Keep roadmap progress tied to calendar days, not the next uncompleted task.
-    // This means a two-day roadmap remains on Day 1 on its first day and changes
-    // to Day 2 when the learner returns on the following calendar day.
     let currentDay = user.currentDay || 1;
     let dayAdvanced = false;
     let newStreak = user.streak || 0;
@@ -63,9 +116,6 @@ export async function GET() {
       createdDate.setHours(0, 0, 0, 0);
       today.setHours(0, 0, 0, 0);
       const calendarDays = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      // A course completion can move the learner straight to the start of the
-      // next course (for example, Day 5 → Day 7). Calendar time can advance
-      // that value, but must not move it backward.
       const newDay = Math.min(totalDays, Math.max(1, calendarDays, user.currentDay || 1));
 
       if (newDay > user.currentDay) {
@@ -76,8 +126,6 @@ export async function GET() {
           data: { currentDay }
         });
       } else {
-        // Correct progress written by older task-completion logic without showing
-        // a false "day advanced" notification.
         currentDay = newDay;
         if (currentDay !== user.currentDay) {
           await prisma.user.update({
@@ -175,7 +223,6 @@ export async function GET() {
       },
       roadmap: activeRoadmap,
       weakAreas,
-      // Notification flags for the client
       dayAdvanced,
       streakInfo: !learnedToday && activeRoadmap ? {
         newDay: currentDay,
