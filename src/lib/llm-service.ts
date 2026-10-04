@@ -1,5 +1,4 @@
 // src/lib/llm-service.ts
-import { ResumeProfile, InterviewLevel, extractNewTechnicalTerms } from "./adaptive-interview";
 
 interface LLMResponse {
   raw: string;
@@ -7,16 +6,20 @@ interface LLMResponse {
 }
 
 /**
- * Universal caller supporting Gemini, OpenAI, Groq, Anthropic, or fallback
+ * Universal caller — tries Gemini (real models), then OpenAI, then Groq.
+ * Falls back to { raw: "" } so callers can invoke their local fallback logic.
  */
 export async function callLLM(systemPrompt: string, userPrompt: string): Promise<LLMResponse> {
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+  const geminiKey =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY;
   const openaiKey = process.env.OPENAI_API_KEY;
   const groqKey = process.env.GROQ_API_KEY;
 
-  // 1. Try Google Gemini API if key exists
+  // 1. Try Google Gemini — real, available model names (latest first)
   if (geminiKey) {
-    const models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-1.5-pro"];
     for (const model of models) {
       try {
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
@@ -44,11 +47,25 @@ export async function callLLM(systemPrompt: string, userPrompt: string): Promise
         if (res.ok) {
           const data = await res.json();
           const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          try {
-            return { raw: text, json: JSON.parse(text) };
-          } catch {
-            return { raw: text };
+          if (text) {
+            try {
+              return { raw: text, json: JSON.parse(text) };
+            } catch {
+              // Try to extract JSON from markdown code blocks
+              const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ||
+                               text.match(/(\{[\s\S]*\})/);
+              if (jsonMatch) {
+                try {
+                  const extracted = (jsonMatch[1] || jsonMatch[0]).trim();
+                  return { raw: text, json: JSON.parse(extracted) };
+                } catch { /* ignore */ }
+              }
+              return { raw: text };
+            }
           }
+        } else {
+          const errData = await res.json().catch(() => ({})) as any;
+          console.warn(`Gemini (${model}) returned ${res.status}:`, errData?.error?.message || "");
         }
       } catch (err) {
         console.warn(`Gemini (${model}) call failed:`, err);
@@ -128,27 +145,45 @@ export async function callLLM(systemPrompt: string, userPrompt: string): Promise
   return { raw: "" };
 }
 
-// System prompts as defined in requirements
-export const QUESTION_GENERATION_SYSTEM_PROMPT = `You are a strict, senior technical interviewer conducting a mock interview.
-Generate exactly ONE interview question at a time.
+// ─── System Prompts ────────────────────────────────────────────────────────────
+
+export const QUESTION_GENERATION_SYSTEM_PROMPT = `You are a strict, senior technical interviewer conducting a REAL mock interview.
+Generate exactly ONE interview question at a time based on the candidate's resume.
 
 Rules:
-- Difficulty level: {level} (low = fundamentals on tech the candidate listed;
-  mid = applied/scenario questions, project deep-dives; high = internals,
-  trade-offs, system design, optimization, edge cases).
-- Base the question primarily on the candidate's resume content.
-- If the candidate's most recent answer used a technical term/technology NOT
-  present in the resume, generate a follow-up question on that term instead.
-- Never repeat a question already asked.
-- No preamble, no hints, no answer — just the question.
-- Respond with ONLY valid JSON: {"question": "...", "topic": "..."}`;
+- Difficulty: {level}
+  low  = definitions & core fundamentals of tech the candidate listed
+  mid  = applied/scenario questions, project deep-dives, "how would you..."
+  high = internals, trade-offs, system design, scaling, edge cases
+- Base the question on the candidate's ACTUAL resume content (skills, projects, tools).
+- If the candidate's most recent answer mentioned a new term NOT in their resume, follow-up on that term.
+- NEVER repeat a question already asked.
+- Do NOT include the answer, hints, or preamble — just the question.
+- Respond with ONLY valid JSON, no markdown fences:
+  {"question": "...", "topic": "..."}`;
 
-export const GRADING_SYSTEM_PROMPT = `You are a strict, objective technical interview grader.
+export const GRADING_SYSTEM_PROMPT = `You are a strict, objective technical interview grader with deep expertise in software engineering.
 
-Rules:
-- Score 0-10.
-- If the answer is irrelevant, off-topic, empty, or doesn't address the
-  question, the score MUST be exactly 0. No partial credit for effort.
-- Score only technical correctness/relevance — not length or confidence.
-- Give 2-3 sentences of specific, honest feedback.
-- Respond with ONLY valid JSON: {"score": <0-10>, "feedback": "..."}`;
+Grading rules:
+- Score 0-10 with ONE decimal place (e.g. 7.5).
+- Score 0 ONLY if: the answer is completely empty, gibberish, irrelevant, or explicitly skips.
+- Score 1-4: partially touches the topic but misses critical depth or accuracy.
+- Score 5-6: working knowledge with minor gaps.
+- Score 7-8: accurate, well-structured, good technical depth.
+- Score 9-10: exceptional — covers all aspects, trade-offs, and edge cases.
+- Evaluate ONLY technical correctness and relevance.
+- Be brutally honest but constructive. Cite SPECIFIC missing points by name.
+- Strengths: 1-3 concrete technical points the candidate got RIGHT.
+- Gaps: 1-3 specific concepts or details they MISSED or got WRONG.
+
+Respond with ONLY valid JSON (no markdown fences):
+{"score": <0-10>, "feedback": "2-3 sentences of specific, actionable feedback", "strengths": ["..."], "gaps": ["..."]}`;
+
+export const SESSION_SUMMARY_SYSTEM_PROMPT = `You are a senior technical hiring manager summarizing a candidate's mock interview performance.
+
+Given the interview records, generate an honest, actionable executive summary.
+Identify the candidate's actual strong areas and specific weak points by topic name.
+The readinessNote should be 2-3 sentences, direct, and constructive.
+
+Respond with ONLY valid JSON (no markdown fences):
+{"readinessNote": "...", "strengths": ["..."], "targetAreas": ["..."]}`;

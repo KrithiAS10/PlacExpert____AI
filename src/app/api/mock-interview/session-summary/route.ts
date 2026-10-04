@@ -1,7 +1,7 @@
 // src/app/api/mock-interview/session-summary/route.ts
 import { NextResponse } from "next/server";
 import { type InterviewRecord, type SessionSummary, type InterviewLevel } from "@/lib/adaptive-interview";
-import { callLLM } from "@/lib/llm-service";
+import { callLLM, SESSION_SUMMARY_SYSTEM_PROMPT } from "@/lib/llm-service";
 
 export const dynamic = "force-dynamic";
 
@@ -28,43 +28,73 @@ export async function POST(req: Request) {
     const averageScore = Math.round((totalScore / totalQuestions) * 10) / 10;
     const readinessPercent = Math.min(100, Math.round((averageScore / 10) * 100));
 
-    // Gather strengths and target areas
-    const strongRecords = records.filter((r) => r.score >= 7);
-    const weakRecords = records.filter((r) => r.score < 6);
+    // Build detailed per-question summary for LLM
+    const questionSummary = records.map((r, i) =>
+      `Q${i + 1} [${r.topic}] (Score: ${r.score}/10): "${r.question}"
+   Answer summary: "${r.answer.slice(0, 200)}..."
+   Feedback: "${r.feedback}"`
+    ).join("\n\n");
 
-    const strengths: string[] = [];
-    strongRecords.forEach((r) => {
-      strengths.push(`Strong mastery in ${r.topic}`);
-    });
+    // Generate full summary via LLM
+    const prompt = `Summarize this mock technical interview performance for a hiring manager report.
 
-    const targetAreas: string[] = [];
-    weakRecords.forEach((r) => {
-      targetAreas.push(`Deepen preparation on ${r.topic}`);
-    });
+Candidate Profile: ${profileSummary || "Software Engineer"}
+Difficulty Level: ${level}
+Average Score: ${averageScore}/10 (${readinessPercent}% readiness)
+Total Questions: ${totalQuestions}
 
-    // Generate summary note via LLM if available
+Per-Question Performance:
+${questionSummary}
+
+Identify specific topics of strength and weakness. Be direct and specific — use topic names.
+Generate:
+- readinessNote: 2-3 sentences honest executive summary of readiness
+- strengths: 3-4 specific topics/skills the candidate demonstrated well
+- targetAreas: 3-4 specific topics/concepts to improve
+
+Respond with ONLY valid JSON (no markdown):
+{"readinessNote": "...", "strengths": ["...", "...", "..."], "targetAreas": ["...", "...", "..."]}`;
+
+    const llmRes = await callLLM(SESSION_SUMMARY_SYSTEM_PROMPT, prompt);
+
     let readinessNote = "";
-    const prompt = `Generate a concise 2-sentence executive summary of a candidate's mock interview performance.
-Details:
-- Average Score: ${averageScore} / 10
-- Total Questions: ${totalQuestions}
-- Difficulty Level: ${level}
-- Strengths: ${strengths.join(", ") || "Consistent attempts"}
-- Improvement Areas: ${targetAreas.join(", ") || "Minor refinements in depth"}
-Respond with ONLY valid JSON: {"readinessNote": "..."}`;
+    let strengths: string[] = [];
+    let targetAreas: string[] = [];
 
-    const llmRes = await callLLM("You are a senior technical hiring evaluator.", prompt);
+    if (llmRes.json) {
+      if (llmRes.json.readinessNote) readinessNote = llmRes.json.readinessNote;
+      if (Array.isArray(llmRes.json.strengths) && llmRes.json.strengths.length)
+        strengths = llmRes.json.strengths;
+      if (Array.isArray(llmRes.json.targetAreas) && llmRes.json.targetAreas.length)
+        targetAreas = llmRes.json.targetAreas;
+    }
 
-    if (llmRes.json && llmRes.json.readinessNote) {
-      readinessNote = llmRes.json.readinessNote;
-    } else {
+    // Fallback if LLM unavailable
+    if (!readinessNote) {
       if (averageScore >= 8) {
-        readinessNote = `Outstanding performance at ${level.toUpperCase()} difficulty. Demonstrates strong architectural understanding, clear communication, and precise technical accuracy. Highly ready for technical interview rounds.`;
-      } else if (averageScore >= 5.5) {
-        readinessNote = `Solid foundational grasp at ${level.toUpperCase()} difficulty with good domain intuition. Focus on elaborating trade-offs, internal mechanics, and real-world edge cases to reach high-tier readiness.`;
+        readinessNote = `Outstanding performance at ${level.toUpperCase()} difficulty — strong architectural understanding, precise technical accuracy, and well-structured reasoning across all topics. Highly interview-ready.`;
+      } else if (averageScore >= 6) {
+        readinessNote = `Solid foundational grasp with good domain intuition at ${level.toUpperCase()} difficulty. Focus on elaborating trade-offs, internal mechanics, and real-world edge cases to reach high-tier readiness.`;
+      } else if (averageScore >= 4) {
+        readinessNote = `Shows partial understanding but lacks depth in several areas at ${level.toUpperCase()} difficulty. Targeted revision on core concepts, direct question alignment, and structured problem-solving is recommended.`;
       } else {
-        readinessNote = `Needs targeted revision on core technical concepts and direct question alignment. Review weak domains and practice structured problem-solving before scheduling company interviews.`;
+        readinessNote = `Needs significant preparation before technical interview rounds. Review fundamentals, practice explaining concepts clearly, and work through more mock sessions on core topics.`;
       }
+    }
+
+    // Fallback strengths/gaps from records if LLM didn't produce them
+    if (strengths.length === 0) {
+      const strongRecords = records.filter((r) => r.score >= 7);
+      strengths = strongRecords.length > 0
+        ? Array.from(new Set(strongRecords.map((r) => `Strong understanding of ${r.topic}`))).slice(0, 4)
+        : ["Consistent technical engagement throughout the session"];
+    }
+
+    if (targetAreas.length === 0) {
+      const weakRecords = records.filter((r) => r.score < 6);
+      targetAreas = weakRecords.length > 0
+        ? Array.from(new Set(weakRecords.map((r) => `Deepen preparation in ${r.topic}`))).slice(0, 4)
+        : ["Practice articulating architectural trade-offs", "Work on edge case coverage in answers"];
     }
 
     const summary: SessionSummary = {
@@ -73,8 +103,8 @@ Respond with ONLY valid JSON: {"readinessNote": "..."}`;
       readinessNote,
       totalQuestions,
       records,
-      strengths: strengths.length ? Array.from(new Set(strengths)).slice(0, 4) : ["Good engagement during technical session"],
-      targetAreas: targetAreas.length ? Array.from(new Set(targetAreas)).slice(0, 4) : ["Keep practicing advanced system design and performance trade-offs"],
+      strengths: Array.from(new Set(strengths)).slice(0, 4),
+      targetAreas: Array.from(new Set(targetAreas)).slice(0, 4),
       level,
     };
 

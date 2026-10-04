@@ -123,6 +123,8 @@ export default function MockInterviewPage() {
   const [isGrading, setIsGrading] = useState(false);
   const [currentGrade, setCurrentGrade] = useState<GradeResult | null>(null);
   const [interviewRecords, setInterviewRecords] = useState<InterviewRecord[]>([]);
+  const [liveAvgScore, setLiveAvgScore] = useState<number | null>(null);
+  const [isSavingSession, setIsSavingSession] = useState(false);
 
   // Session Summary state
   const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
@@ -324,7 +326,12 @@ export default function MockInterviewPage() {
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
 
-      setInterviewRecords((prev) => [...prev, newRecord]);
+      const updatedRecords = [...interviewRecords, newRecord];
+      setInterviewRecords(updatedRecords);
+
+      // Update live average score
+      const avg = updatedRecords.reduce((s, r) => s + r.score, 0) / updatedRecords.length;
+      setLiveAvgScore(Math.round(avg * 10) / 10);
     } catch (err) {
       console.error("Grading failed:", err);
     } finally {
@@ -354,6 +361,7 @@ export default function MockInterviewPage() {
     setCurrentStep("summary");
     setIsGeneratingSummary(true);
     try {
+      // Generate summary
       const res = await fetch("/api/mock-interview/session-summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -365,6 +373,21 @@ export default function MockInterviewPage() {
       });
       const summaryData: SessionSummary = await res.json();
       setSessionSummary(summaryData);
+
+      // Save to analytics DB (fire and forget — don't block UI)
+      setIsSavingSession(true);
+      fetch("/api/mock-interview/save-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          records: recordsToSummarize,
+          level,
+          averageScore: summaryData.averageScore,
+          readinessPercent: summaryData.readinessPercent,
+        }),
+      })
+        .catch((e) => console.warn("Session save skipped:", e))
+        .finally(() => setIsSavingSession(false));
     } catch (err) {
       console.error("Failed to generate summary:", err);
     } finally {
@@ -652,6 +675,19 @@ export default function MockInterviewPage() {
               </div>
 
               <div className="flex items-center gap-4 text-xs text-slate-400">
+                {/* Live average score indicator */}
+                {liveAvgScore !== null && (
+                  <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
+                    liveAvgScore >= 7
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : liveAvgScore >= 5
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                      : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                  }`}>
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    Live Avg: {liveAvgScore}/10
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-indigo-400" />
                   <span>

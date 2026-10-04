@@ -133,6 +133,57 @@ export async function GET(
       await prisma.interview.update({ where: { id: interviewId }, data: { status: "COMPLETED" } });
     }
 
+    // Update user analytics & readiness score in real time
+    const userId = interview.userId;
+    if (userId) {
+      const now = new Date();
+      await prisma.analytics.createMany({
+        data: [
+          {
+            userId,
+            date: now,
+            metric: "mock_interview_score",
+            value: report.overallScore,
+          },
+          {
+            userId,
+            date: now,
+            metric: "mock_interview_readiness",
+            value: Math.round(report.overallScore * 10),
+          },
+          {
+            userId,
+            date: now,
+            metric: "mock_interview_questions",
+            value: history.length,
+          },
+          {
+            userId,
+            date: now,
+            metric: "Readiness",
+            value: Number(report.overallScore.toFixed(1)),
+          },
+        ],
+      });
+
+      await prisma.activity.create({
+        data: {
+          userId,
+          action: `Completed ${interview.type} AI Interview (${interview.difficulty}) — Score: ${report.overallScore}/10`,
+          status: report.overallScore >= 7 ? "STRONG" : report.overallScore >= 5 ? "AVERAGE" : "NEEDS_WORK",
+          timestamp: now,
+        },
+      });
+
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (user && report.overallScore > (user.readinessScore || 0)) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { readinessScore: Number(report.overallScore.toFixed(1)) },
+        });
+      }
+    }
+
     return NextResponse.json({
       success: true,
       interviewId,

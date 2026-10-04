@@ -284,6 +284,102 @@ export default function RoadmapPage() {
   const [checkpointFeedback, setCheckpointFeedback] = useState<{ isCorrect: boolean; message: string } | null>(null);
   const REQUIRED_SOLVED = 5;
 
+  const [taskQuestionsPool, setTaskQuestionsPool] = useState<Record<string, QuestionItem[]>>({});
+  const [askedQuestionsHistory, setAskedQuestionsHistory] = useState<Record<string, string[]>>({});
+  const [taskTrialCounts, setTaskTrialCounts] = useState<Record<string, number>>({});
+  const [loadingQuestions, setLoadingQuestions] = useState(false);
+
+  // ── Fetch fresh, non-repeating Gemini questions for a task ──
+  const fetchFreshQuestions = async (
+    task: Task,
+    count = 5,
+    excludeList: string[] = []
+  ): Promise<QuestionItem[]> => {
+    setLoadingQuestions(true);
+    const existingAsked = askedQuestionsHistory[task.id] || [];
+    const allPreviouslyAsked = Object.values(askedQuestionsHistory).flat();
+    const combinedExclude = Array.from(new Set([...allPreviouslyAsked, ...existingAsked, ...excludeList]));
+    const nextTrial = (taskTrialCounts[task.id] || 0) + 1;
+
+    try {
+      const res = await fetch("/api/roadmap/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskTitle: task.title,
+          taskType: task.type,
+          role: user?.domainInterest || "",
+          language: user?.preferredLang || "",
+          count,
+          excludeQuestions: combinedExclude,
+          trial: nextTrial,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questions && data.questions.length > 0) {
+          const responseQuestions = data.questions as QuestionItem[];
+          const fresh = responseQuestions.filter((q) => !combinedExclude.includes(q.q));
+          const finalQuestions = Array.from(new Map(fresh.map((q: QuestionItem) => [q.q.trim().toLowerCase(), q])).values());
+
+          if (finalQuestions.length === 0) return [];
+
+          setTaskTrialCounts((prev) => ({ ...prev, [task.id]: nextTrial }));
+          setAskedQuestionsHistory((prev) => ({
+            ...prev,
+            [task.id]: Array.from(new Set([...(prev[task.id] || []), ...finalQuestions.map((q: QuestionItem) => q.q)])),
+          }));
+
+          return finalQuestions;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch fresh AI questions:", e);
+    } finally {
+      setLoadingQuestions(false);
+    }
+
+    const fallback = getQuizQuestionsForTask(task.title, task.type, combinedExclude);
+    setAskedQuestionsHistory((prev) => ({
+      ...prev,
+      [task.id]: Array.from(new Set([...(prev[task.id] || []), ...fallback.map((q) => q.q)])),
+    }));
+    return fallback;
+  };
+
+  // ── Open the Verification Checkpoint Modal with dynamic AI questions ──
+  const openVerificationModal = async (task: Task) => {
+    if (!visitedLinks[task.id]) {
+      alert("Please click and open the resource link above first before submitting proof of completion!");
+      return;
+    }
+    setShowProofModal(true);
+    setLoadingQuestions(true);
+    setProofError(null);
+    setCheckpointSelectedOpt(null);
+    setCheckpointFeedback(null);
+
+    const existingPool = (taskQuestionsPool[task.id] || []).filter(
+      (q) => !verificationUsedQuestions.includes(q.q)
+    );
+
+    let nextQ: QuestionItem | null = existingPool[0] || null;
+
+    if (!nextQ) {
+      const fresh = await fetchFreshQuestions(task, 6, verificationUsedQuestions);
+      nextQ = fresh[0] || getNextVerificationQuestion(task.title, task.type, verificationUsedQuestions);
+      setTaskQuestionsPool((prev) => ({
+        ...prev,
+        [task.id]: [...(prev[task.id] || []), ...fresh],
+      }));
+    }
+
+    setActiveVerificationQ(nextQ);
+    setVerificationUsedQuestions((prev) => (prev.includes(nextQ!.q) ? prev : [...prev, nextQ!.q]));
+    setLoadingQuestions(false);
+  };
+
   const [showExitModal, setShowExitModal] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
 
@@ -350,17 +446,33 @@ export default function RoadmapPage() {
         // ❌ Wrong answer: Show clear explanation, and immediately swap to a fresh question for this topic that has not been seen yet
         setCheckpointFeedback({
           isCorrect: false,
-          message: `❌ Incorrect answer. ${activeQuestion.explanation} Swapping to a fresh question to verify your understanding...`
+          message: `❌ Incorrect answer. ${activeQuestion.explanation} Swapping to a fresh, unseen question on ${todayTaskRef.current?.title || 'this topic'}...`
         });
 
-        setTimeout(() => {
-          const freshQ = getNextVerificationQuestion(
-            todayTaskRef.current?.title || "",
-            todayTaskRef.current?.type,
-            verificationUsedQuestions
+        setTimeout(async () => {
+          const task = todayTaskRef.current;
+          if (!task) return;
+          const available = (taskQuestionsPool[task.id] || []).filter(
+            (q) => !verificationUsedQuestions.includes(q.q) && q.q !== activeQuestion.q
           );
+
+          let freshQ: QuestionItem;
+          if (available.length > 0) {
+            freshQ = available[0];
+          } else {
+            const newlyFetched = await fetchFreshQuestions(task, 4, [
+              ...verificationUsedQuestions,
+              activeQuestion.q,
+            ]);
+            freshQ = newlyFetched[0] || getNextVerificationQuestion(task.title, task.type, verificationUsedQuestions);
+            setTaskQuestionsPool((prev) => ({
+              ...prev,
+              [task.id]: [...(prev[task.id] || []), ...newlyFetched],
+            }));
+          }
+
           setActiveVerificationQ(freshQ);
-          setVerificationUsedQuestions((prev) => prev.includes(freshQ.q) ? prev : [...prev, freshQ.q]);
+          setVerificationUsedQuestions((prev) => (prev.includes(freshQ.q) ? prev : [...prev, freshQ.q]));
           setCheckpointSelectedOpt(null);
           setCheckpointFeedback(null);
           setProofError(null);
@@ -396,14 +508,27 @@ export default function RoadmapPage() {
             isCorrect: true,
             message: `🎉 Correct answer! Question #${newCount} verified. Loading question #${newCount + 1}...`
           });
-          setTimeout(() => {
-            const freshQ = getNextVerificationQuestion(
-              todayTaskRef.current?.title || "",
-              todayTaskRef.current?.type,
-              verificationUsedQuestions
+          setTimeout(async () => {
+            const task = todayTaskRef.current;
+            if (!task) return;
+            const available = (taskQuestionsPool[task.id] || []).filter(
+              (q) => !verificationUsedQuestions.includes(q.q)
             );
+
+            let freshQ: QuestionItem;
+            if (available.length > 0) {
+              freshQ = available[0];
+            } else {
+              const newlyFetched = await fetchFreshQuestions(task, 4, verificationUsedQuestions);
+              freshQ = newlyFetched[0] || getNextVerificationQuestion(task.title, task.type, verificationUsedQuestions);
+              setTaskQuestionsPool((prev) => ({
+                ...prev,
+                [task.id]: [...(prev[task.id] || []), ...newlyFetched],
+              }));
+            }
+
             setActiveVerificationQ(freshQ);
-            setVerificationUsedQuestions((prev) => prev.includes(freshQ.q) ? prev : [...prev, freshQ.q]);
+            setVerificationUsedQuestions((prev) => (prev.includes(freshQ.q) ? prev : [...prev, freshQ.q]));
             setCheckpointSelectedOpt(null);
             setCheckpointFeedback(null);
             fetchRoadmapData();
@@ -432,20 +557,23 @@ export default function RoadmapPage() {
     }
   };
 
-  // ── Start a fresh quiz for the current task ──
-
-  const startQuiz = (task: Task) => {
-    // Strictly exclude all questions from Work Verification (studying proof) and past quiz attempts!
-    const excludedQuestions = Array.from(
+  // ── Start a fresh quiz for the current task — always generates a brand new trial set ──
+  const startQuiz = async (task: Task) => {
+    setLoadingQuestions(true);
+    const excluded = Array.from(
       new Set([
+        ...Object.values(askedQuestionsHistory).flat(),
         ...verificationUsedQuestions,
         ...quizUsedQuestions,
-        ...(activeVerificationQ ? [activeVerificationQ.q] : [])
+        ...(askedQuestionsHistory[task.id] || []),
       ])
     );
-    const qs = getQuizQuestionsForTask(task.title, task.type, excludedQuestions);
-    setQuizUsedQuestions((prev) => Array.from(new Set([...prev, ...qs.map((q) => q.q)])));
-    setQuizQuestions(qs);
+    const freshQs = await fetchFreshQuestions(task, 5, excluded);
+    const cleanQs = freshQs.length >= 5
+      ? freshQs.slice(0, 5)
+      : getQuizQuestionsForTask(task.title, task.type, [...excluded, ...freshQs.map((q) => q.q)]);
+    setQuizUsedQuestions((prev) => Array.from(new Set([...prev, ...cleanQs.map((q) => q.q)])));
+    setQuizQuestions(cleanQs.slice(0, 5));
     setCurrentQ(0);
     setSelectedOption(null);
     setRevealed(false);
@@ -453,6 +581,7 @@ export default function RoadmapPage() {
     setQuizDone(false);
     setQuizPassed(false);
     setQuizActive(true);
+    setLoadingQuestions(false);
   };
 
   // ── Handle selecting an option ──
@@ -896,27 +1025,15 @@ export default function RoadmapPage() {
                             </p>
 
                             <button
-                              onClick={() => {
-                                if (!linkVisited) {
-                                  alert("Please click and open the resource link above first before submitting proof of completion!");
-                                  return;
-                                }
-                                const nextQ = getNextVerificationQuestion(todayTask.title, todayTask.type, verificationUsedQuestions);
-                                setActiveVerificationQ(nextQ);
-                                setVerificationUsedQuestions((prev) => prev.includes(nextQ.q) ? prev : [...prev, nextQ.q]);
-                                setCheckpointSelectedOpt(null);
-                                setCheckpointFeedback(null);
-                                setProofError(null);
-                                setShowProofModal(true);
-                              }}
-                              disabled={solvingProblem}
+                              onClick={() => openVerificationModal(todayTask)}
+                              disabled={solvingProblem || loadingQuestions}
                               className={`w-full py-2 font-bold rounded-lg flex items-center justify-center gap-2 transition-all text-xs border ${linkVisited
                                   ? "bg-brand-orange/20 border-brand-orange/40 text-brand-orange hover:bg-brand-orange/30 cursor-pointer shadow-glow-orange"
                                   : "bg-white/5 border-white/10 text-gray-500 cursor-not-allowed"
                                 }`}
                             >
                               <FileCheck className="w-3.5 h-3.5" />
-                              {taskLabels.btnLabel}
+                              {loadingQuestions ? "Loading AI Questions..." : taskLabels.btnLabel}
                             </button>
                           </>
                         )}
@@ -930,7 +1047,7 @@ export default function RoadmapPage() {
 
                       <button
                         onClick={() => startQuiz(todayTask)}
-                        disabled={!quizReady}
+                        disabled={!quizReady || loadingQuestions}
                         className={`w-full py-2.5 font-bold rounded-lg flex items-center justify-center gap-2 transition-all text-xs ${quizReady
                             ? "bg-gradient-to-r from-brand-cyan to-brand-blue text-dark-bg hover:opacity-90 shadow-glow-cyan cursor-pointer"
                             : "bg-white/5 text-gray-600 cursor-not-allowed border border-white/5"
@@ -938,7 +1055,9 @@ export default function RoadmapPage() {
                       >
                         <Brain className="w-3.5 h-3.5" />
                         <span>
-                          {quizReady
+                          {loadingQuestions
+                            ? "Generating AI Quiz Questions..."
+                            : quizReady
                             ? "Take Quiz to Complete Task"
                             : `🔒 Verify ${REQUIRED_SOLVED} Items to Unlock Quiz`}
                         </span>
@@ -985,10 +1104,11 @@ export default function RoadmapPage() {
                     {!quizPassed && (
                       <button
                         onClick={() => startQuiz(todayTask)}
-                        className="w-full py-2 bg-white/5 border border-white/10 text-white font-semibold rounded-lg flex items-center justify-center gap-2 hover:bg-white/10 transition-all text-xs"
+                        disabled={loadingQuestions}
+                        className="w-full py-2 bg-white/5 border border-white/10 text-white font-semibold rounded-lg flex items-center justify-center gap-2 hover:bg-white/10 transition-all text-xs cursor-pointer disabled:opacity-50"
                       >
-                        <RefreshCw className="w-3.5 h-3.5" />
-                        Retry Quiz (Fresh Questions)
+                        <RefreshCw className={`w-3.5 h-3.5 ${loadingQuestions ? "animate-spin text-brand-cyan" : ""}`} />
+                        {loadingQuestions ? "Generating Fresh AI Question Set..." : "Retry Quiz (Fresh Question Set)"}
                       </button>
                     )}
                   </div>
@@ -1168,26 +1288,34 @@ export default function RoadmapPage() {
                 </a>
 
                 {/* Question box with smooth key transition */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeQ.q}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.15 }}
-                    className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider block">
-                        Verification Question #{Math.min(5, currentSolvedIdx + 1)} of 5
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        Topic: {todayTask.title.split("—")[0].trim()}
-                      </span>
-                    </div>
-                    <p className="text-xs font-semibold text-white leading-relaxed">
-                      {activeQ.q}
+                {loadingQuestions && !activeVerificationQ ? (
+                  <div className="flex flex-col items-center justify-center py-10 space-y-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                    <div className="w-7 h-7 border-2 border-brand-cyan/20 border-t-brand-cyan rounded-full animate-spin" />
+                    <p className="text-xs text-brand-cyan font-medium animate-pulse">
+                      Generating AI verification questions for {todayTask.title}...
                     </p>
+                  </div>
+                ) : (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeQ.q}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      className="p-3.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] font-bold text-brand-cyan uppercase tracking-wider block">
+                          Question #{Math.min(5, currentSolvedIdx + 1)} of 5
+                        </span>
+                        <span className="text-[10px] text-brand-cyan/80 bg-brand-cyan/10 px-2 py-0.5 rounded-md border border-brand-cyan/20 flex items-center gap-1 font-semibold truncate max-w-[200px]">
+                          <Sparkles className="w-3 h-3 shrink-0" /> {todayTask.title}
+                        </span>
+                      </div>
+                      <p className="text-xs font-semibold text-white leading-relaxed">
+                        {activeQ.q}
+                      </p>
 
                     <div className="space-y-2 pt-1">
                       {activeQ.options.map((opt, i) => {
@@ -1216,6 +1344,7 @@ export default function RoadmapPage() {
                     </div>
                   </motion.div>
                 </AnimatePresence>
+              )}
 
                 {/* Instant Evaluation Feedback Alert */}
                 {checkpointFeedback && (

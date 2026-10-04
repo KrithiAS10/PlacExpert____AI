@@ -40,17 +40,19 @@ export async function POST(req: Request) {
     }
 
     // 2. Call LLM Grader with strict grading prompt
-    const userPrompt = `
-Question Asked: "${question}"
+    const userPrompt = `Grade this technical interview answer strictly and honestly.
+
+Question: "${question}"
 Topic: "${topic}"
 Difficulty Level: "${level}"
+
 Candidate's Answer:
 "${trimmedAnswer}"
 
-Grade the candidate's answer strictly following the rules:
-- Score 0-10 (0 if completely irrelevant or off-topic, otherwise strictly by technical correctness and depth).
-- Respond with ONLY valid JSON: {"score": <0-10>, "feedback": "...", "strengths": ["..."], "gaps": ["..."]}
-`;
+Evaluate based on: technical accuracy, depth, correctness of concepts, and relevance to the question.
+Give SPECIFIC feedback — name the exact concepts that are correct or missing.
+Respond with ONLY valid JSON (no markdown):
+{"score": <0-10 with one decimal>, "feedback": "2-3 sentences of specific, actionable feedback mentioning exact concepts", "strengths": ["exact technical strength 1"], "gaps": ["specific missing concept 1"]}`;
 
     const llmRes = await callLLM(GRADING_SYSTEM_PROMPT, userPrompt);
 

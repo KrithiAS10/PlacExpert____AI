@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Navbar } from "@/components/Navbar";
-import { X, Zap, Mail, Lock, User, Phone, Globe, ArrowRight, ShieldCheck, CheckCircle2, Flame, Calendar, Bell } from "lucide-react";
+import { X, Zap, Mail, Lock, User, Phone, ArrowRight, ShieldCheck, CheckCircle2, Flame, Calendar, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   // Exclude /login, /signup, and /admin routes from student session checks
   const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname?.startsWith("/admin");
@@ -18,7 +19,6 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [authMode, setAuthMode] = useState<"register" | "login">("register");
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   // ── Streak / Day-Advance Notification ──
   const [streakNotification, setStreakNotification] = useState<{
@@ -100,6 +100,22 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, [pathname, isAuthPage]);
 
+  // Show Google OAuth errors from query params
+  useEffect(() => {
+    const googleError = searchParams?.get("google_error");
+    if (googleError) {
+      const messages: Record<string, string> = {
+        not_configured: "Google Sign-In is not configured yet. Please contact support.",
+        token_exchange_failed: "Google authentication failed. Please try again.",
+        profile_fetch_failed: "Could not retrieve your Google profile. Please try again.",
+        no_email: "Your Google account does not have a verified email address.",
+        server_error: "An unexpected error occurred during Google Sign-In.",
+        access_denied: "Google Sign-In was cancelled.",
+      };
+      setErrorMsg(messages[googleError] || "Google Sign-In failed. Please try again.");
+    }
+  }, [searchParams]);
+
   // Handle Form Submit
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,56 +162,10 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Simulate Google login
-  const handleGoogleSignIn = async () => {
-    setGoogleLoading(true);
+  // Real Google OAuth — redirect to server-side OAuth flow
+  const handleGoogleSignIn = () => {
     setErrorMsg("");
-    
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    try {
-      // First try to login Google Mock User
-      let res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: "google_user@gmail.com", password: "google_mock_password" })
-      });
-
-      if (!res.ok) {
-        // If user not found, register Google Mock User
-        res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: "Google User",
-            username: "google_user",
-            email: "google_user@gmail.com",
-            phone: "",
-            password: "google_mock_password"
-          })
-        });
-      }
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Google Sign-in failed");
-      }
-
-      setSuccessMsg("Signed in with Google!");
-      await fetchUser();
-      
-      // Redirect to profiling if new
-      if (!data.user?.domainInterest) {
-        router.push("/profiling");
-      } else {
-        router.refresh();
-      }
-    } catch (err: any) {
-      setErrorMsg(err.message || "Google Sign-in simulation failed");
-    } finally {
-      setGoogleLoading(false);
-    }
+    window.location.href = "/api/auth/google";
   };
 
   const handleLogout = async () => {
@@ -495,19 +465,16 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
               <div className="relative z-10">
                 <button
                   onClick={handleGoogleSignIn}
-                  disabled={googleLoading}
-                  className="w-full flex items-center justify-center gap-3 py-3 bg-dark-bg border border-dark-border rounded-xl text-xs text-white font-bold hover:bg-white/5 transition-all disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-3 py-3 bg-dark-bg border border-dark-border rounded-xl text-xs text-white font-bold hover:bg-white/5 transition-all"
                 >
-                  {googleLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      Connecting to Google Account...
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="w-4 h-4 text-brand-cyan" /> Sign In with Google
-                    </>
-                  )}
+                  {/* Official Google G logo */}
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                  Sign In with Google
                 </button>
               </div>
 

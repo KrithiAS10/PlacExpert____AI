@@ -532,7 +532,8 @@ export function getNextVerificationQuestion(
   const topicKey = getTopicKeyForTask(taskTitle, taskType);
   const pool = TOPIC_QUESTION_DATABASE[topicKey] || TOPIC_QUESTION_DATABASE.arrays;
   
-  const available = pool.filter(q => !excludeQuestions.includes(q.q));
+  const excluded = new Set(excludeQuestions.map(normalizeQuestion));
+  const available = pool.filter(q => !excluded.has(normalizeQuestion(q.q)));
   if (available.length > 0) {
     const randomIndex = Math.floor(Math.random() * available.length);
     return available[randomIndex];
@@ -542,19 +543,36 @@ export function getNextVerificationQuestion(
   const relatedKeys = RELATED_TOPICS[topicKey] || ["generic"];
   for (const rk of relatedKeys) {
     const relPool = TOPIC_QUESTION_DATABASE[rk] || [];
-    const relAvailable = relPool.filter(q => !excludeQuestions.includes(q.q));
+    const relAvailable = relPool.filter(q => !excluded.has(normalizeQuestion(q.q)));
     if (relAvailable.length > 0) {
       return relAvailable[Math.floor(Math.random() * relAvailable.length)];
     }
   }
 
   // If exhausted primary & related pools, source from any other unseen question in database
-  const allOtherQuestions = Object.values(TOPIC_QUESTION_DATABASE).flat().filter(q => !excludeQuestions.includes(q.q));
+  const allOtherQuestions = uniqueQuestions(Object.values(TOPIC_QUESTION_DATABASE).flat())
+    .filter(q => !excluded.has(normalizeQuestion(q.q)));
   if (allOtherQuestions.length > 0) {
     return allOtherQuestions[Math.floor(Math.random() * allOtherQuestions.length)];
   }
 
-  return pool[Math.floor(Math.random() * pool.length)];
+  // The caller should stop requesting questions when the complete database is
+  // exhausted. Returning an already-seen question would break the no-repeat rule.
+  return pool[0];
+}
+
+function normalizeQuestion(question: string): string {
+  return question.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function uniqueQuestions(questions: QuestionItem[]): QuestionItem[] {
+  const seen = new Set<string>();
+  return questions.filter((question) => {
+    const key = normalizeQuestion(question.q);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 /**
@@ -568,10 +586,12 @@ export function getQuizQuestionsForTask(
   excludeQuestions: string[] = []
 ): QuestionItem[] {
   const topicKey = getTopicKeyForTask(taskTitle, taskType);
+  const excluded = new Set(excludeQuestions.map(normalizeQuestion));
   const primaryPool = TOPIC_QUESTION_DATABASE[topicKey] || TOPIC_QUESTION_DATABASE.arrays;
   
   // 1. Filter out all excluded questions from primary topic pool
-  const availableFromPrimary = primaryPool.filter(q => !excludeQuestions.includes(q.q));
+  const availableFromPrimary = uniqueQuestions(primaryPool)
+    .filter(q => !excluded.has(normalizeQuestion(q.q)));
   
   if (availableFromPrimary.length >= 5) {
     const shuffled = [...availableFromPrimary].sort(() => Math.random() - 0.5);
@@ -585,9 +605,9 @@ export function getQuizQuestionsForTask(
   for (const rk of relatedKeys) {
     if (selected.length >= 5) break;
     const relPool = TOPIC_QUESTION_DATABASE[rk] || [];
-    const relAvailable = relPool.filter(q => 
-      !excludeQuestions.includes(q.q) && 
-      !selected.some(s => s.q === q.q)
+    const relAvailable = uniqueQuestions(relPool).filter(q =>
+      !excluded.has(normalizeQuestion(q.q)) &&
+      !selected.some(s => normalizeQuestion(s.q) === normalizeQuestion(q.q))
     );
     const needed = 5 - selected.length;
     const picked = [...relAvailable].sort(() => Math.random() - 0.5).slice(0, needed);
@@ -600,9 +620,9 @@ export function getQuizQuestionsForTask(
 
   // 3. Supplement from any unseen question across the entire database
   const remainingNeeded = 5 - selected.length;
-  const allOtherUnseen = Object.values(TOPIC_QUESTION_DATABASE)
-    .flat()
-    .filter(q => !excludeQuestions.includes(q.q) && !selected.some(s => s.q === q.q));
+  const allOtherUnseen = uniqueQuestions(Object.values(TOPIC_QUESTION_DATABASE).flat())
+    .filter(q => !excluded.has(normalizeQuestion(q.q)) &&
+      !selected.some(s => normalizeQuestion(s.q) === normalizeQuestion(q.q)));
 
   const shuffledOther = [...allOtherUnseen].sort(() => Math.random() - 0.5).slice(0, remainingNeeded);
   selected.push(...shuffledOther);
@@ -611,18 +631,7 @@ export function getQuizQuestionsForTask(
     return selected.slice(0, 5).sort(() => Math.random() - 0.5);
   }
 
-  // 4. Absolute fallback: avoid returning duplicate questions within the same set
-  const pool = [...primaryPool].sort(() => Math.random() - 0.5);
-  const seenInCurrent = new Set<string>();
-  const finalSet: QuestionItem[] = [];
-
-  for (const item of [...selected, ...pool]) {
-    if (!seenInCurrent.has(item.q)) {
-      seenInCurrent.add(item.q);
-      finalSet.push(item);
-      if (finalSet.length === 5) break;
-    }
-  }
-
-  return finalSet;
+  // There are not enough unseen questions left for a full set. Return only
+  // unseen questions instead of padding with repeats.
+  return uniqueQuestions(selected).slice(0, 5).sort(() => Math.random() - 0.5);
 }

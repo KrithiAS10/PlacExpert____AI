@@ -166,18 +166,28 @@ Note: "correct" must be the zero-based index (0, 1, 2, or 3) of the correct answ
     let rawText = "";
 
     if (isGemini) {
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-      const res = await fetch(geminiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
-        }),
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const models = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+      for (const m of models) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${process.env.GEMINI_API_KEY}`;
+          const res = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.7, responseMimeType: "application/json" },
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            if (rawText) break;
+          }
+        } catch (e) {
+          console.warn(`Quiz generation model ${m} failed:`, e);
+        }
+      }
+      if (!rawText) return null;
     } else {
       // OpenAI or Groq API
       const endpoint = isGroq ? "https://api.groq.com/openai/v1/chat/completions" : "https://api.openai.com/v1/chat/completions";

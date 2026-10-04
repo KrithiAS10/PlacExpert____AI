@@ -12,7 +12,7 @@ import {
   ArrowDownRight,
   Activity,
   Download,
-  FileText,
+  Brain,
   Loader2
 } from "lucide-react";
 
@@ -51,6 +51,13 @@ interface Roadmap {
   phases: Phase[];
 }
 
+interface AnalyticsRecord {
+  id: string;
+  metric: string;
+  value: number;
+  date: string | Date;
+}
+
 interface AnalyticsUser {
   name: string | null;
   readinessScore: number;
@@ -58,6 +65,7 @@ interface AnalyticsUser {
   streak: number;
   roadmaps?: Roadmap[];
   totalSolvedProblems?: number;
+  analytics?: AnalyticsRecord[];
 }
 
 interface AnalyticsClientProps {
@@ -66,10 +74,28 @@ interface AnalyticsClientProps {
 }
 
 export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
-  console.log("Chart data available:", !!chartData); // Use it to avoid lint warning
+  void chartData; // suppress lint
 
   const [isGenerating, setIsGenerating] = useState(false);
   const isNewUser = !user.readinessScore || user.readinessScore === 0;
+
+  // ─── Mock Interview Analytics from DB ──────────────────────────────
+  const mockInterviewRecords = (user.analytics || []).filter(
+    (a) => a.metric === "mock_interview_score"
+  );
+  const hasMockData = mockInterviewRecords.length > 0;
+  const bestMockScore = hasMockData
+    ? Math.max(...mockInterviewRecords.map((r) => r.value))
+    : 0;
+  const avgMockScore = hasMockData
+    ? Math.round((mockInterviewRecords.reduce((s, r) => s + r.value, 0) / mockInterviewRecords.length) * 10) / 10
+    : 0;
+  const totalMockSessions = hasMockData ? mockInterviewRecords.length : 0;
+  const mockScoreTrend = hasMockData
+    ? mockInterviewRecords
+        .slice(-6)
+        .map((r, i) => ({ session: `S${i + 1}`, score: r.value, color: r.value >= 7 ? '#10b981' : r.value >= 5 ? '#f59e0b' : '#ef4444' }))
+    : [];
 
   // Flatten all tasks from roadmaps
   const allTasks = user.roadmaps?.flatMap(rm =>
@@ -578,6 +604,95 @@ export function AnalyticsClient({ user, chartData }: AnalyticsClientProps) {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* ─── Mock Interview Performance ────────────────────────────────────────── */}
+      <div className="glass-card p-8 rounded-3xl border-white/5">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Brain className="w-5 h-5 text-brand-purple" />
+              AI Mock Interview Performance
+            </h3>
+            <p className="text-xs text-gray-500 mt-1">
+              {hasMockData
+                ? "Real-time data from your completed mock interview sessions"
+                : "Complete a mock interview to see your performance analytics here"}
+            </p>
+          </div>
+          {hasMockData && (
+            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              Live Data
+            </span>
+          )}
+        </div>
+
+        {hasMockData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Stats */}
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Total Sessions</p>
+                <p className="text-3xl font-black text-brand-purple">{totalMockSessions}</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Best Score</p>
+                <p className={`text-3xl font-black ${bestMockScore >= 7 ? 'text-emerald-400' : bestMockScore >= 5 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  {bestMockScore}<span className="text-sm font-normal text-gray-500">/10</span>
+                </p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Session Average</p>
+                <p className={`text-3xl font-black ${avgMockScore >= 7 ? 'text-emerald-400' : avgMockScore >= 5 ? 'text-amber-400' : 'text-rose-400'}`}>
+                  {avgMockScore}<span className="text-sm font-normal text-gray-500">/10</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Score Trend Chart */}
+            <div className="lg:col-span-2">
+              <p className="text-xs font-semibold text-gray-400 mb-4">Recent Session Scores (last 6)</p>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="99%" height={200}>
+                  <BarChart data={mockScoreTrend}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
+                    <XAxis dataKey="session" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} dy={8} />
+                    <YAxis domain={[0, 10]} axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
+                    <Tooltip
+                      cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                      contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px' }}
+                      formatter={(value: any) => [`${value ?? 0}/10`, 'Score']}
+                    />
+                    <Bar dataKey="score" radius={[6, 6, 0, 0]} barSize={36}>
+                      {mockScoreTrend.map((entry, index) => (
+                        <Cell key={`mock-cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Score legend */}
+              <div className="flex items-center gap-6 mt-3 text-[11px] text-gray-500">
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Strong (7–10)</div>
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-400 inline-block" /> Average (5–6)</div>
+                <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-rose-400 inline-block" /> Needs Work (0–4)</div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-brand-purple/10 flex items-center justify-center">
+              <Brain className="w-7 h-7 text-brand-purple" />
+            </div>
+            <p className="text-sm text-gray-400 max-w-xs">
+              No mock interview data yet. Complete an{" "}
+              <a href="/mock-interview" className="text-brand-purple underline underline-offset-2 hover:text-purple-300 transition-colors">
+                AI Mock Interview
+              </a>{" "}
+              to see your performance analytics here.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
